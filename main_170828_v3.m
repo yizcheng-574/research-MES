@@ -22,10 +22,10 @@ elseif period == 4 % 只有174家公司了
     load windValue_15min.mat
 end
 load '../gridPriceRecord'
-Le_max = [1.5 , 1 , 1.5];
-Lh_max = [2.5 , 0.5 , 2];
-solar_max = [0.5 , 0.2 , 0.3];
-wind_max = [0.3 , 0 , 0.4];
+Le_max = [1.5 , 1 , 1.5] * 1000;
+Lh_max = [2.5 , 0.5 , 2] * 1000;
+solar_max = [0.5 , 0.2 , 0.3] * 1000;
+wind_max = [0.3 , 0 , 0.4] * 1000;
 % IES1 工业区，电热负荷都比较平，白天稍高，热大于电，负荷型
 EH1_Le = loadValue(:,94); % 对应134号公司 %/10
 EH1_Lh = loadValue(:,143); % 对应223号公司 %/5
@@ -69,9 +69,12 @@ for IES_no = 1 : 3
     eval(['EH',num2str(IES_no),'_Lh = EH',num2str(IES_no),'_Lh / max(EH',num2str(IES_no),'_Lh) * Lh_max(IES_no);']);
     eval(['EH',num2str(IES_no),'_solarP = EH',num2str(IES_no),'_solarP / max(EH',num2str(IES_no),'_solarP) * solar_max(IES_no);']);
     eval(['EH',num2str(IES_no),'_windP = EH',num2str(IES_no),'_windP / max(EH',num2str(IES_no),'_windP) * wind_max(IES_no);']);
+    eval(['EH',num2str(IES_no),'_solarP_rate = solar_max(IES_no);']);
+    eval(['EH',num2str(IES_no),'_windP_rate = wind_max(IES_no);']);
 end
 
 % 简要画图，判断净负荷，包括电与热
+%{
 EH1_Le_jing = EH1_Le-EH1_solarP-EH1_windP;
 EH2_Le_jing = EH2_Le-EH2_solarP-EH2_windP;
 EH3_Le_jing = EH3_Le-EH3_solarP-EH3_windP;
@@ -93,7 +96,7 @@ plot(EH3_Le)
 plot(EH3_Lh,'r')
 plot(EH3_Le_jing,'k')
 legend('电负荷','热负荷','净负荷');
-
+%}
 clear loadName loadValue renewableName solarValue windValue 
 
 
@@ -115,12 +118,12 @@ elePrice(8*period+1 : 12*period) = ones(4*period,1) .* 1.0447;
 elePrice(17*period+1 : 21*period) = ones(4*period,1) .* 1.0447;
 %}
 %实时电价
-elePrice = gridPriceRecord( 49 : 49 + 24 - 1);
+elePrice = gridPriceRecord( 49 : 49 + 24 - 1)';
 elePrice = ( elePrice - min(elePrice) ) / (max(elePrice) - min(elePrice)) * 0.8 + 0.3;
 clear gridPriceRecord
 
-singleLimit = [16000, 800, 2500]; 
-totalLimit = 16000; 
+singleLimit = [1.5 , 1, 1.5] * 1000; 
+totalLimit = 4 * 1000; 
 reverseRate = 4;
 % 支线: 下级向上级购电、售电约束，再加一个线损率5-7%
 eleLimit1 = [singleLimit(1), -singleLimit(1)/reverseRate, 0.94];
@@ -138,9 +141,9 @@ gasLimit3 = 1e6;
 % gasLimit_total = 150; %暂时无法对天然气总量做单独约束，只能默认是各支线约束的和
 
 %CHP的参数
-CHP1_para = [0.35, 0.45, 30000, 0.4]; % CHP_GE_eff_in, CHP_GH_eff_in, CHP_Prate_in, CHP_Pmin_Rate_in
-CHP2_para = [0.35, 0.45, 1500, 0.45];
-CHP3_para = [0.35, 0.45, 5000, 0.45];
+CHP1_para = [0.35, 0.45, 1500, 0.4]; % CHP_GE_eff_in, CHP_GH_eff_in, CHP_Prate_in, CHP_Pmin_Rate_in
+CHP2_para = [0.35, 0.45, 1000, 0.45];
+CHP3_para = [0.35, 0.45, 1500, 0.45];
 
 %锅炉
 Boiler1_para = [0.90; 1e5]; % Boiler_eff_in, Boiler_Prate_in
@@ -150,9 +153,9 @@ Boiler3_para = [0.90; 1e5];
 %电储能和热储能
 % ES_totalC_in, ES_maxSOC_in, ES_minSOC_in, ES_currentSOC_in, ES_targetSOC_in, ES_chargeTime, ES_eff_in
 % 0.096*200, 0.85, 0.15, 0.5, 0.5, 0.024*200, 0.9
-ES1_para = [50000, 0.8, 0.2,      0.4, 0.4,   10, 0.9]; 
-ES2_para = [3000, 0.85, 0.15,      0.4, 0.4,   10, 0.9]; 
-ES3_para = [10000, 0.85, 0.15,    0.4, 0.4,   10, 0.9]; 
+ES1_para = [3000, 0.8, 0.2,      0.4, 0.4,   10, 0.9]; 
+ES2_para = [2000, 0.85, 0.15,      0.4, 0.4,   10, 0.9]; 
+ES3_para = [3000, 0.85, 0.15,    0.4, 0.4,   10, 0.9]; 
 % HS_totalC_in, HS_maxSOC_in, HS_minSOC_in, HS_currentSOC_in, HS_targetSOC_in, HS_chargeTime, HS_eff_in
 % 5*4, 0.85, 0.15, 0.5, 0.5, 1.5*4, 0.9
 HS1_para = [6000, 0.9, 0.1, 0.5, 0.5, 5, 0.9];
@@ -219,15 +222,15 @@ x(1:24) + x(24*7+1:24*8)
 IESnumber = 3; % IES个数
 
 % 用于存放最终优化结果
-result_ES_SOC = zeros(24*period+1,IESnumber);
-result_HS_SOC = zeros(24*period+1,IESnumber);
-result_Ele = zeros(24*period,IESnumber);
-result_CHP_G = zeros(24*period,IESnumber);
-result_Boiler_G = zeros(24*period,IESnumber);
-result_ES_discharge = zeros(24*period,IESnumber);
-result_ES_charge = zeros(24*period,IESnumber);
-result_HS_discharge = zeros(24*period,IESnumber);
-result_HS_charge = zeros(24*period,IESnumber);
+result_ES_SOC = zeros(24 * period+1 , IESnumber);
+result_HS_SOC = zeros(24 * period+1 , IESnumber);
+result_Ele = zeros(24 * period , IESnumber);
+result_CHP_G = zeros(24 * period , IESnumber);
+result_Boiler_G = zeros(24 * period , IESnumber);
+result_ES_discharge = zeros(24 * period , IESnumber);
+result_ES_charge = zeros(24 * period , IESnumber);
+result_HS_discharge = zeros(24 * period , IESnumber);
+result_HS_charge = zeros(24 * period , IESnumber);
 
 
 

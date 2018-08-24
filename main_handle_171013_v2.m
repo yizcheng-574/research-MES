@@ -6,112 +6,65 @@ global period
 
 figure(1)
 optNumber=24;
-t=0:1:24*period;
+t=1:1:24*period;
 w=1.2;
 
-EH1_Le(24*period+1) = EH1_Le(24*period);
-EH1_Lh(24*period+1) = EH1_Lh(24*period);
-EH1_solarP(24*period+1) = EH1_solarP(24*period);
-EH1_windP(24*period+1) = EH1_windP(24*period);
-EH2_Le(24*period+1) = EH2_Le(24*period);
-EH2_Lh(24*period+1) = EH2_Lh(24*period);
-EH2_solarP(24*period+1) = EH2_solarP(24*period);
-EH2_windP(24*period+1) = EH2_windP(24*period);
-EH3_Le(24*period+1) = EH3_Le(24*period);
-EH3_Lh(24*period+1) = EH3_Lh(24*period);
-EH3_solarP(24*period+1) = EH3_solarP(24*period);
-EH3_windP(24*period+1) = EH3_windP(24*period);
-
-subplot(3,2,1)
-hold on
-stairs(t,EH1_Le/1000,'Color','b','LineStyle','--','LineWidth',w) %plot
-stairs(t,EH1_Lh/1000,'Color','r','LineStyle','-','LineWidth',w)
-xlim([0,24*period])
-set(gca,'XTick',0:(24*period/4):24*period, 'XTickLabel',{'0:00','6:00','12:00','18:00','24:00'})
-% ylabel('load / kW')
-% xlabel('time / h')
-% legend('Le','Lh','Location','northoutside','Orientation','horizontal')
-ylabel('负荷需求(MW)')
-% xlabel('时间(h)')
-legend('电负荷','热负荷','Location','northoutside','Orientation','horizontal')
-
-subplot(3,2,2)
-hold on
-stairs(t,EH1_solarP/1000,'Color','r','LineStyle','-','LineWidth',w)
-stairs(t,EH1_windP/1000,'Color','b','LineStyle','--','LineWidth',w)
-xlim([0,24*period])
-set(gca,'XTick',0:(24*period/4):24*period, 'XTickLabel',{'0:00','6:00','12:00','18:00','24:00'})
-% ylabel('RES power / kW')
-% xlabel('time / h')
-% legend('PV','WT','Location','northoutside','Orientation','horizontal')
-ylabel('发电功率(MW)')
-% xlabel('时间(h)')
-legend('光伏','风电','Location','northoutside','Orientation','horizontal')
-
-subplot(3,2,3)
-hold on
-stairs(t,EH2_Le/1000,'Color','b','LineStyle','--','LineWidth',w)
-stairs(t,EH2_Lh/1000,'Color','r','LineStyle','-','LineWidth',w)
-xlim([0,24*period])
-set(gca,'XTick',0:(24*period/4):24*period, 'XTickLabel',{'0:00','6:00','12:00','18:00','24:00'})
-% ylabel('load / kW')
-% xlabel('time / h')
-ylabel('负荷需求(MW)')
-% xlabel('时间(h)')
-
-subplot(3,2,4)
-hold on
-stairs(t,EH2_solarP/1000,'Color','r','LineStyle','-','LineWidth',w)
-stairs(t,EH2_windP/1000,'Color','b','LineStyle','--','LineWidth',w)
-xlim([0,24*period])
-set(gca,'XTick',0:(24*period/4):24*period, 'XTickLabel',{'0:00','6:00','12:00','18:00','24:00'})
-% ylabel('RES power / kW')
-% xlabel('time / h')
-ylabel('发电功率(MW)')
-% xlabel('时间(h)')
-
-subplot(3,2,5)
-hold on
-stairs(t,EH3_Le/1000,'Color','b','LineStyle','--','LineWidth',w)
-stairs(t,EH3_Lh/1000,'Color','r','LineStyle','-','LineWidth',w)
-xlim([0,24*period])
-ylim([0,6])
-set(gca,'XTick',0:(24*period/4):24*period, 'XTickLabel',{'0:00','6:00','12:00','18:00','24:00'})
-% xlabel('time / h')
-% ylabel('load / kW')
-ylabel('负荷需求(MW)')
-% xlabel('时间(h)')
-
-subplot(3,2,6)
-hold on
-stairs(t,EH3_solarP/1000,'Color','r','LineStyle','-','LineWidth',w)
-stairs(t,EH3_windP/1000,'Color','b','LineStyle','--','LineWidth',w)
-xlim([0,24*period])
-set(gca,'XTick',0:(24*period/4):24*period, 'XTickLabel',{'0:00','6:00','12:00','18:00','24:00'})
-% xlabel('time / h')
-% ylabel('RES power / kW')
-ylabel('发电功率(MW)')
-% xlabel('时间(h)')
+% EH1_Le(24*period+1) = EH1_Le(24*period);
+% EH1_Lh(24*period+1) = EH1_Lh(24*period);
+% EH1_solarP(24*period+1) = EH1_solarP(24*period);
+% EH1_windP(24*period+1) = EH1_windP(24*period);
+% EH2_Le(24*period+1) = EH2_Le(24*period);
+% EH2_Lh(24*period+1) = EH2_Lh(24*period);
+% EH2_solarP(24*period+1) = EH2_solarP(24*period);
+% EH2_windP(24*period+1) = EH2_windP(24*period);
+% EH3_Le(24*period+1) = EH3_Le(24*period);
+% EH3_Lh(24*period+1) = EH3_Lh(24*period);
+% EH3_solarP(24*period+1) = EH3_solarP(24*period);
+% EH3_windP(24*period+1) = EH3_windP(24*period);
 
 
-
+for IES_no = 1 : 3
+    eval(['EH_Le = EH',num2str(IES_no),'_Le;']);
+    eval(['EH_Lh = EH',num2str(IES_no),'_Lh;']);
+    eval(['EH_solarP = EH',num2str(IES_no),'_solarP;']);
+    eval(['EH_windP = EH',num2str(IES_no),'_windP;']);
+    subplot(3 , 2 , (IES_no - 1) * 2 + 1 )
+    hold on;
+    stairs(t,EH_Le/1000,'Color','b','LineStyle','--','LineWidth',w) %plot
+    stairs(t,EH_Lh/1000,'Color','r','LineStyle','-','LineWidth',w)
+    xlim([0,24*period])
+    set(gca,'XTick',0:(24*period/4):24*period, 'XTickLabel',{'0:00','6:00','12:00','18:00','24:00'})
+    ylabel('负荷需求(MW)')
+    legend('电负荷','热负荷','Location','northoutside','Orientation','horizontal')
+    % ylabel('load / kW')
+    % xlabel('time / h')
+    % legend('Le','Lh','Location','northoutside','Orientation','horizontal')
+    % xlabel('时间(h)')
+    subplot(3,2,(IES_no - 1) * 2 + 2 )
+    hold on
+    stairs(t,EH_solarP/1000,'Color','r','LineStyle','-','LineWidth',w)
+    stairs(t,EH_windP/1000,'Color','b','LineStyle','--','LineWidth',w)
+    xlim([0,24*period])
+    set(gca,'XTick',0:(24*period/4):24*period, 'XTickLabel',{'0:00','6:00','12:00','18:00','24:00'})
+    % ylabel('RES power / kW')
+    % xlabel('time / h')
+    % legend('PV','WT','Location','northoutside','Orientation','horizontal')
+    ylabel('发电功率(MW)')
+    % xlabel('时间(h)')
+    legend('光伏','风电','Location','northoutside','Orientation','horizontal')
+end
 
 %--------------------------------------数据处理--------------------------------------
 result_Gas = result_CHP_G + result_Boiler_G;
-result_Ele_loss(:,1) = result_Ele(:,1) .* eleLimit1(3); % eleLimit1(3)是线损率
-result_Ele_loss(:,2) = result_Ele(:,2) .* eleLimit2(3);
-result_Ele_loss(:,3) = result_Ele(:,3) .* eleLimit3(3);
-result_CHP_power(:,1) = result_CHP_G(:,1) .* CHP1_para(1);  % 效率参数现在不一样了
-result_CHP_power(:,2) = result_CHP_G(:,2) .* CHP2_para(1);
-result_CHP_power(:,3) = result_CHP_G(:,3) .* CHP3_para(1);
-result_CHP_heat(:,1) = result_CHP_G(:,1) .* CHP1_para(2);  % 效率参数现在不一样了
-result_CHP_heat(:,2) = result_CHP_G(:,2) .* CHP2_para(2);
-result_CHP_heat(:,3) = result_CHP_G(:,3) .* CHP3_para(2);
-result_Boiler_heat(:,1) = result_Boiler_G(:,1) .* Boiler1_para(1);  % 效率参数现在不一样了
-result_Boiler_heat(:,2) = result_Boiler_G(:,2) .* Boiler2_para(1);
-result_Boiler_heat(:,3) = result_Boiler_G(:,3) .* Boiler3_para(1);
+for IES_no = 1 : 3
+    eval(['result_Ele_loss(:,IES_no) = result_Ele(:,IES_no) .* eleLimit',num2str(IES_no),'(3);']); % eleLimit(3)是线损率
+    eval(['result_CHP_power(:,IES_no) = result_CHP_G(:,IES_no) .* CHP',num2str(IES_no),'_para(1); ']);
+    eval(['result_CHP_heat(:,IES_no) = result_CHP_G(:,IES_no) .* CHP',num2str(IES_no),'_para(2); ']); 
+    eval(['result_Boiler_heat(:,IES_no) = result_Boiler_G(:,IES_no) .* Boiler',num2str(IES_no),'_para(1);']);  
+end
 
-%{
+
+%
 %--------------------------------------测试优化结果--------------------------------------
 % eleLimit(3)是线损率
 ee = 1e-3;
@@ -297,10 +250,9 @@ result_balance_grid = gridClearDemand + sum(result_Ele,2); %2表示按列相加
 %}
 % 计算
 %计算总成本 按网价计算
-totalCost1 = ( sum(result_Ele(:,1) .* elePrice) + sum(result_Gas(:,1) .* gasPrice1) ) / period;
-totalCost2 = ( sum(result_Ele(:,2) .* elePrice) + sum(result_Gas(:,2) .* gasPrice1) ) / period;
-totalCost3 = ( sum(result_Ele(:,3) .* elePrice) + sum(result_Gas(:,3) .* gasPrice3) ) / period;
-
+for IES_no = 1 : 3
+    eval(['totalCost',num2str(IES_no),' = ( sum(result_Ele(:,',num2str(IES_no),') .* elePrice) + sum(result_Gas(:,',num2str(IES_no),') .* gasPrice',num2str(IES_no),') ) / period;']);
+end
 disp(['IES1总成本为 ',num2str(totalCost1),' 元'])
 disp(['IES2总成本为 ',num2str(totalCost2),' 元'])
 disp(['IES3总成本为 ',num2str(totalCost3),' 元'])

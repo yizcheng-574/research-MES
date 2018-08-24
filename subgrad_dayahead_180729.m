@@ -1,5 +1,5 @@
 %用次梯度法求解日前优化问题
-global period,elePrice;
+global period elePrice;
 priceArray = elePrice; %由历史数据得到预测电价 %也是用于迭代的价格变量
 priceArray_record = zeros(24*period,2); %一列日前，一列实时
 ee = 0.01; %0.0001 0.0003
@@ -121,11 +121,11 @@ EH1.conditionHandlePrice_DA(priceArray, gasPrice1, 1, clearDemand(:,2));
 EH2.conditionHandlePrice_DA(priceArray, gasPrice1, 1, clearDemand(:,3));
 EH3.conditionHandlePrice_DA(priceArray, gasPrice3, 1, clearDemand(:,4));
 clearDemand_grid_all=clearDemand_grid_new';
-disp(['日前全时段集中优化成本：']);clearDemand_grid_all*elePrice
+disp(['日前全时段集中优化成本：']);
 priceArray_pre_all=priceArray;
 
 priceArray_record(:,1) = priceArray;
-t_dayahead = toc; %这个时间不准确，因为3个IES应该是并行计算的
+% t_dayahead = toc; %这个时间不准确，因为3个IES应该是并行计算的
 
 % 日前优化的结果
 [result_Ele(:,1), result_CHP_G(:,1), result_Boiler_G(:,1), result_ES_discharge(:,1), result_ES_charge(:,1), result_HS_discharge(:,1), result_HS_charge(:,1), result_ES_SOC(:,1), result_HS_SOC(:,1), EH1_Le, EH1_Lh, EH1_solarP, EH1_windP] = EH1.getResult;
