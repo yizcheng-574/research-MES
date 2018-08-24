@@ -21,44 +21,56 @@ elseif period == 4 % 只有174家公司了
     load solarValue_15min.mat
     load windValue_15min.mat
 end
-
+load '../gridPriceRecord'
+Le_max = [1.5 , 1 , 1.5];
+Lh_max = [2.5 , 0.5 , 2];
+solar_max = [0.5 , 0.2 , 0.3];
+wind_max = [0.3 , 0 , 0.4];
 % IES1 工业区，电热负荷都比较平，白天稍高，热大于电，负荷型
-EH1_Le = loadValue(:,94) .* 4; % 对应134号公司 %/10
-EH1_Lh = loadValue(:,143) .* 8; % 对应223号公司 %/5
-EH1_solarP = solarValue(:,3) ./1000 .* 50; %*1
-EH1_windP = windValue(:,3)./1000 .* 30; %*2
+EH1_Le = loadValue(:,94); % 对应134号公司 %/10
+EH1_Lh = loadValue(:,143); % 对应223号公司 %/5
+EH1_solarP = solarValue(:,3) ; %*1
+EH1_windP = windValue(:,3); %*2
+
+
+% IES2 商务区，电热负荷白天高，晚上很低，热电相当，电有驼峰，负荷型
+EH2_Le = loadValue(:,88) ; % 对应127号公司 %/8
+EH2_Lh = loadValue(:,91) ; % 对应130号公司 %/6
+EH2_solarP = solarValue(:,1) ; %*1
+EH2_windP = windValue(:,1); %*3
+
+% IES3 住宅区，电热负荷白天低，晚上高，热电相当，资源丰富型
+if period == 1
+    EH3_Le = loadValue(:,172) ; % 对应273号公司 %/5
+    EH3_Lh = loadValue(:,174) ; % 对应275号公司 %/6
+elseif period == 4
+    EH3_Le = loadValue(:,169) ; % 对应273号公司
+    EH3_Lh = loadValue(:,171) ; % 对应275号公司
+end
+EH3_solarP = solarValue(:,27) ; 
+EH3_windP = windValue(:,27); 
+
+%{
 EH1_solarP_rate = 5000;
 EH1_windP_rate = 1500;
 EH1_solarP(EH1_solarP>EH1_solarP_rate) = EH1_solarP_rate;
 EH1_windP(EH1_windP>EH1_windP_rate) = EH1_windP_rate;
-
-% IES2 商务区，电热负荷白天高，晚上很低，热电相当，电有驼峰，负荷型
-EH2_Le = loadValue(:,88) ./ 2.25; % 对应127号公司 %/8
-EH2_Lh = loadValue(:,91) ./ 2.25*1.4 ; % 对应130号公司 %/6
-EH2_solarP = solarValue(:,1) ./1000 .* 2; %*1
-EH2_windP = windValue(:,1)./1000 .* 15; %*3
 EH2_solarP_rate = 250;
 EH2_windP_rate = 500;
 EH2_solarP(EH2_solarP>EH2_solarP_rate) = EH2_solarP_rate;
 EH2_windP(EH2_windP>EH2_windP_rate) = EH2_windP_rate;
-
-% IES3 住宅区，电热负荷白天低，晚上高，热电相当，资源丰富型
-if period == 1
-    EH3_Le = loadValue(:,172) .* 3; % 对应273号公司 %/5
-    EH3_Lh = loadValue(:,174) .* 2.5; % 对应275号公司 %/6
-elseif period == 4
-    EH3_Le = loadValue(:,169) ./ 5; % 对应273号公司
-    EH3_Lh = loadValue(:,171) ./ 6; % 对应275号公司
-end
-EH3_solarP = solarValue(:,27) ./1000 .* 9; %*2
-EH3_windP = windValue(:,27)./1000 .* 6; %*6
 EH3_solarP_rate = 1000;
 EH3_windP_rate = 300;
 EH3_solarP(EH3_solarP>EH3_solarP_rate) = EH3_solarP_rate;
 EH3_windP(EH3_windP>EH3_windP_rate) = EH3_windP_rate;
+%}
+for IES_no = 1 : 3
+    eval(['EH',num2str(IES_no),'_Le = EH',num2str(IES_no),'_Le / max(EH',num2str(IES_no),'_Le) * Le_max(IES_no);']);
+    eval(['EH',num2str(IES_no),'_Lh = EH',num2str(IES_no),'_Lh / max(EH',num2str(IES_no),'_Lh) * Lh_max(IES_no);']);
+    eval(['EH',num2str(IES_no),'_solarP = EH',num2str(IES_no),'_solarP / max(EH',num2str(IES_no),'_solarP) * solar_max(IES_no);']);
+    eval(['EH',num2str(IES_no),'_windP = EH',num2str(IES_no),'_windP / max(EH',num2str(IES_no),'_windP) * wind_max(IES_no);']);
+end
 
-
-%{
 % 简要画图，判断净负荷，包括电与热
 EH1_Le_jing = EH1_Le-EH1_solarP-EH1_windP;
 EH2_Le_jing = EH2_Le-EH2_solarP-EH2_windP;
@@ -68,18 +80,21 @@ hold on
 plot(EH1_Le)
 plot(EH1_Lh,'r')
 plot(EH1_Le_jing,'k')
+legend('电负荷','热负荷','净电负荷');
 figure
 hold on
 plot(EH2_Le)
 plot(EH2_Lh,'r')
 plot(EH2_Le_jing,'k')
+legend('电负荷','热负荷','净负荷');
 figure
 hold on
 plot(EH3_Le)
 plot(EH3_Lh,'r')
 plot(EH3_Le_jing,'k')
-%}
-clear loadName loadValue renewableName solarValue windValue
+legend('电负荷','热负荷','净负荷');
+
+clear loadName loadValue renewableName solarValue windValue 
 
 
 global minMarketPrice maxMarketPrice priceNumbers step
@@ -92,12 +107,19 @@ marketInfo = [minMarketPrice; maxMarketPrice; step; priceNumbers];
 
 % 电网特性
 global elePrice
+%分时电价
+%{
 elePrice = ones(24*period,1) .* 0.6268;
 elePrice(0+1 : 8*period) = ones(8*period,1) .* 0.3089;
 elePrice(8*period+1 : 12*period) = ones(4*period,1) .* 1.0447;
 elePrice(17*period+1 : 21*period) = ones(4*period,1) .* 1.0447;
+%}
+%实时电价
+elePrice = gridPriceRecord( 49 : 49 + 24 - 1);
+elePrice = ( elePrice - min(elePrice) ) / (max(elePrice) - min(elePrice)) * 0.8 + 0.3;
+clear gridPriceRecord
 
-singleLimit = [16000, 800, 2500]; %[16000, 800, 2500] [0 0 0] [16000, 800, 2500]./19300.*16000
+singleLimit = [16000, 800, 2500]; 
 totalLimit = 16000; 
 reverseRate = 4;
 % 支线: 下级向上级购电、售电约束，再加一个线损率5-7%
