@@ -6,7 +6,7 @@ close all
 % 20180309 v3 重新改回1小时，可以再进一步加大预测误差，风光的标准差分开，数据更贴近真实
 
 global period
-period = 60 / 15; % 分母是时间间隔
+period = 60 / 60; % 分母是时间间隔
 
 if period == 1
     load '../tmp1.mat' % 有177家公司
