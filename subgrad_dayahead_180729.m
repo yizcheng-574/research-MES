@@ -3,7 +3,7 @@ global period elePrice;
 priceArray = elePrice; %由历史数据得到预测电价 %也是用于迭代的价格变量
 priceArray_record = zeros(24*period,2); %一列日前，一列实时
 ee = 0.01; %0.0001 0.0003
-iterativeStep = 0.00001; %0.00001 0.0001
+iterativeStep = 0.0001; %0.00001 0.0001
 iterationTimes = zeros(24*period, 2); %记录迭代次数
 maxIteration = 3000; %最大迭代次数
 
@@ -23,7 +23,7 @@ clearDemand_record = zeros( 24 * period, maxIteration + 1);
 
 
 %如果前后两次价格的偏差太大，则返回第1步
-while number <= 2 | max(abs(lamda_new - lamda_old)) > ee | max(abs(clearDemand_new - clearDemand_old)) > 1e-4 %1e-6, 不能直接取0
+while number <= 2 | max(abs(lamda_new - lamda_old)) > ee |max(abs(clearDemand_new))>1%| max(abs(clearDemand_new - clearDemand_old)) > 1e-4 %1e-6, 不能直接取0
     % 后一个条件是因为即使lamda收敛后，供需也不平衡，所以需要取一正一负两个点，来求零点
     % && || 的前一个为否，则后一个就不计算了
     % 要求至少迭代两次（number=1，2）
@@ -48,7 +48,7 @@ while number <= 2 | max(abs(lamda_new - lamda_old)) > ee | max(abs(clearDemand_n
     ub1 = eleLimit_total(1) * ones( 24 * period , 1);
     clearDemand_grid_new=zeros(24 * period ,1);
     for i = 1: 24 * period
-        if lamda_new(i) < 1e-4            
+        if abs(lamda_new(i)) < 1e-4            
              clearDemand_grid_new(i) = clearDemand_EH1_new(i) + clearDemand_EH2_new(i) + clearDemand_EH3_new(i);
              if clearDemand_grid_new(i) > eleLimit_total(1)
                  clearDemand_grid_new(i) = eleLimit_total(1);

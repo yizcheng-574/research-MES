@@ -22,8 +22,8 @@ elseif period == 4 % 只有174家公司了
     load windValue_15min.mat
 end
 load '../gridPriceRecord'
-Le_max = [1.5 , 1 , 1.5] * 1000;
-Lh_max = [2.5 , 0.5 , 2] * 1000;
+Le_max = [1.5 , 1.2 , 1.5] * 1000;
+Lh_max = [2.5 , 1 , 2] * 1000;
 solar_max = [0.5 , 0.2 , 0.3] * 1000;
 wind_max = [0.3 , 0 , 0.4] * 1000;
 % IES1 工业区，电热负荷都比较平，白天稍高，热大于电，负荷型
@@ -47,8 +47,8 @@ elseif period == 4
     EH3_Le = loadValue(:,169) ; % 对应273号公司
     EH3_Lh = loadValue(:,171) ; % 对应275号公司
 end
-EH3_solarP = solarValue(:,27) ; 
-EH3_windP = windValue(:,27); 
+EH3_solarP = solarValue(:,27) ;
+EH3_windP = windValue(:,27);
 
 %{
 EH1_solarP_rate = 5000;
@@ -64,7 +64,9 @@ EH3_windP_rate = 300;
 EH3_solarP(EH3_solarP>EH3_solarP_rate) = EH3_solarP_rate;
 EH3_windP(EH3_windP>EH3_windP_rate) = EH3_windP_rate;
 %}
-for IES_no = 1 : 3
+IESnumber = 3; % IES个数
+
+for IES_no = 1 : IESnumber
     eval(['EH',num2str(IES_no),'_Le = EH',num2str(IES_no),'_Le / max(EH',num2str(IES_no),'_Le) * Le_max(IES_no);']);
     eval(['EH',num2str(IES_no),'_Lh = EH',num2str(IES_no),'_Lh / max(EH',num2str(IES_no),'_Lh) * Lh_max(IES_no);']);
     eval(['EH',num2str(IES_no),'_solarP = EH',num2str(IES_no),'_solarP / max(EH',num2str(IES_no),'_solarP) * solar_max(IES_no);']);
@@ -74,30 +76,35 @@ for IES_no = 1 : 3
 end
 
 % 简要画图，判断净负荷，包括电与热
-%{
+
 EH1_Le_jing = EH1_Le-EH1_solarP-EH1_windP;
 EH2_Le_jing = EH2_Le-EH2_solarP-EH2_windP;
 EH3_Le_jing = EH3_Le-EH3_solarP-EH3_windP;
-figure
-hold on
-plot(EH1_Le)
-plot(EH1_Lh,'r')
-plot(EH1_Le_jing,'k')
-legend('电负荷','热负荷','净电负荷');
-figure
-hold on
-plot(EH2_Le)
-plot(EH2_Lh,'r')
-plot(EH2_Le_jing,'k')
-legend('电负荷','热负荷','净负荷');
-figure
-hold on
-plot(EH3_Le)
-plot(EH3_Lh,'r')
-plot(EH3_Le_jing,'k')
-legend('电负荷','热负荷','净负荷');
-%}
-clear loadName loadValue renewableName solarValue windValue 
+% figure
+% subplot(2,1,1);hold on
+% plot(EH1_Le)
+% plot(EH1_Lh,'r')
+% plot(EH1_Le_jing,'k')
+% legend('电负荷','热负荷','净电负荷');
+% subplot(2,1,2);
+% plot(EH1_Le_jing/0.35-EH1_Lh/0.45);
+% figure
+% subplot(2,1,1);hold on
+% plot(EH2_Le)
+% plot(EH2_Lh,'r')
+% plot(EH2_Le_jing,'k')
+% legend('电负荷','热负荷','净负荷');
+% subplot(2,1,2);
+% plot(EH2_Le_jing/0.35-EH2_Lh/0.45);
+% figure
+% subplot(2,1,1);hold on
+% plot(EH3_Le)
+% plot(EH3_Lh,'r')
+% plot(EH3_Le_jing,'k')
+% legend('电负荷','热负荷','净负荷');
+% subplot(2,1,2);
+% plot(EH3_Le_jing/0.35-EH3_Lh/0.45);
+clear loadName loadValue renewableName solarValue windValue
 
 
 global minMarketPrice maxMarketPrice priceNumbers step
@@ -119,11 +126,12 @@ elePrice(17*period+1 : 21*period) = ones(4*period,1) .* 1.0447;
 %}
 %实时电价
 elePrice = gridPriceRecord( 49 : 49 + 24 - 1)';
-elePrice = ( elePrice - min(elePrice) ) / (max(elePrice) - min(elePrice)) * 0.8 + 0.3;
+elePrice = ( elePrice - min(elePrice) ) / (max(elePrice) - min(elePrice)) * 0.5 + 0.3 ;
 clear gridPriceRecord
 
-singleLimit = [1.5 , 1, 1.5] * 1000; 
-totalLimit = 4 * 1000; 
+singleLimit = [max(EH1_Le) , max(EH2_Le), max(EH3_Le)];
+% totalLimit = 1.5 * 1000;
+totalLimit = mean(EH1_Le_jing) + mean(EH2_Le_jing) + mean(EH3_Le_jing);
 reverseRate = 4;
 % 支线: 下级向上级购电、售电约束，再加一个线损率5-7%
 eleLimit1 = [singleLimit(1), -singleLimit(1)/reverseRate, 0.94];
@@ -142,25 +150,25 @@ gasLimit3 = 1e6;
 
 %CHP的参数
 CHP1_para = [0.35, 0.45, 1500, 0.4]; % CHP_GE_eff_in, CHP_GH_eff_in, CHP_Prate_in, CHP_Pmin_Rate_in
-CHP2_para = [0.35, 0.45, 1000, 0.45];
-CHP3_para = [0.35, 0.45, 1500, 0.45];
+CHP2_para = [0.35, 0.45, 1200, 0.4];
+CHP3_para = [0.35, 0.45, 1500, 0.4];
 
 %锅炉
-Boiler1_para = [0.90; 1e5]; % Boiler_eff_in, Boiler_Prate_in
-Boiler2_para = [0.90; 1e5];
-Boiler3_para = [0.90; 1e5];
+Boiler1_para = [0.90; 2500]; % Boiler_eff_in, Boiler_Prate_in
+Boiler2_para = [0.90; 1000];
+Boiler3_para = [0.90; 2000];
 
 %电储能和热储能
 % ES_totalC_in, ES_maxSOC_in, ES_minSOC_in, ES_currentSOC_in, ES_targetSOC_in, ES_chargeTime, ES_eff_in
 % 0.096*200, 0.85, 0.15, 0.5, 0.5, 0.024*200, 0.9
-ES1_para = [3000, 0.8, 0.2,      0.4, 0.4,   10, 0.9]; 
-ES2_para = [2000, 0.85, 0.15,      0.4, 0.4,   10, 0.9]; 
-ES3_para = [3000, 0.85, 0.15,    0.4, 0.4,   10, 0.9]; 
+ES1_para = [3000, 0.8, 0.2,      0.4, 0.4,   10, 0.9];
+ES2_para = [2000, 0.85, 0.15,      0.4, 0.4,   10, 0.9];
+ES3_para = [3000, 0.85, 0.15,    0.4, 0.4,   10, 0.9];
 % HS_totalC_in, HS_maxSOC_in, HS_minSOC_in, HS_currentSOC_in, HS_targetSOC_in, HS_chargeTime, HS_eff_in
 % 5*4, 0.85, 0.15, 0.5, 0.5, 1.5*4, 0.9
-HS1_para = [6000, 0.9, 0.1, 0.5, 0.5, 5, 0.9];
-HS2_para = [1000, 0.9, 0.1, 0.5, 0.5, 5, 0.9];
-HS3_para = [6000, 0.9, 0.1, 0.5, 0.5, 5, 0.9]; 
+HS1_para = [500, 0.9, 0.1, 0.5, 0.5, 5, 0.9];
+HS2_para = [500, 0.9, 0.1, 0.5, 0.5, 5, 0.9];
+HS3_para = [400, 0.9, 0.1, 0.5, 0.5, 5, 0.9];
 
 % 负荷和风光预测误差
 dev_L = 3/100; %百分数 1
@@ -219,8 +227,6 @@ x(1:24) + x(24*7+1:24*8)
 %}
 
 
-IESnumber = 3; % IES个数
-
 % 用于存放最终优化结果
 result_ES_SOC = zeros(24 * period+1 , IESnumber);
 result_HS_SOC = zeros(24 * period+1 , IESnumber);
@@ -256,8 +262,8 @@ for t_current = 1:24*period
     ES3_para(4) = result_ES_SOC(t_current, 3);
     
     HS1_para(4) = result_HS_SOC(t_current, 1);
-    HS2_para(4) = result_HS_SOC(t_current, 2);    
-    HS3_para(4) = result_HS_SOC(t_current, 3); 
+    HS2_para(4) = result_HS_SOC(t_current, 2);
+    HS3_para(4) = result_HS_SOC(t_current, 3);
     
     [EH1_f, EH1_ub, EH1_lb, EH1_A, EH1_b, EH1_A_eleLimit_total] = OptMatrix_rolling_20171010(eleLimit1, gasLimit1, EH1_Le, EH1_Lh, CHP1_para, Boiler1_para, ES1_para, HS1_para, gasPrice1, EH1_windP, EH1_solarP, t_current);
     [EH2_f, EH2_ub, EH2_lb, EH2_A, EH2_b, EH2_A_eleLimit_total] = OptMatrix_rolling_20171010(eleLimit2, gasLimit2, EH2_Le, EH2_Lh, CHP2_para, Boiler2_para, ES2_para, HS2_para, gasPrice1, EH2_windP, EH2_solarP, t_current);
@@ -273,7 +279,7 @@ for t_current = 1:24*period
     lb = [EH1_lb; EH2_lb; EH3_lb];
 
     % 当前版本没有等式约束了，都是不等式约束
-    A1 = [EH1_A, zeros(var+2,var), zeros(var+2,var); 
+    A1 = [EH1_A, zeros(var+2,var), zeros(var+2,var);
           zeros(var+2,var), EH2_A, zeros(var+2,var);
           zeros(var+2,var), zeros(var+2,var), EH3_A;];
     b1 = [EH1_b; EH2_b; EH3_b];
@@ -307,7 +313,7 @@ for t_current = 1:24*period
         result_ES_charge(t_current, i) = x(time*4+1 + var*(i-1), 1);
         result_HS_discharge(t_current, i) = x(time*5+1 + var*(i-1), 1);
         result_HS_charge(t_current, i) = x(time*6+1 + var*(i-1), 1);
-    end    
+    end
     %更新储能状态
     result_ES_SOC(t_current+1, 1) = result_ES_SOC(t_current, 1) - result_ES_discharge(t_current, 1) / ES1_para(7) / ES1_para(1) + result_ES_charge(t_current, 1) * ES1_para(7) / ES1_para(1);
     result_ES_SOC(t_current+1, 2) = result_ES_SOC(t_current, 2) - result_ES_discharge(t_current, 2) / ES2_para(7) / ES2_para(1) + result_ES_charge(t_current, 2) * ES2_para(7) / ES2_para(1);
@@ -315,7 +321,7 @@ for t_current = 1:24*period
     
     result_HS_SOC(t_current+1, 1) = result_HS_SOC(t_current, 1) - result_HS_discharge(t_current, 1) / HS1_para(7) / HS1_para(1) + result_HS_charge(t_current, 1) * HS1_para(7) / HS1_para(1);
     result_HS_SOC(t_current+1, 2) = result_HS_SOC(t_current, 2) - result_HS_discharge(t_current, 2) / HS2_para(7) / HS2_para(1) + result_HS_charge(t_current, 2) * HS2_para(7) / HS2_para(1);
-    result_HS_SOC(t_current+1, 3) = result_HS_SOC(t_current, 3) - result_HS_discharge(t_current, 3) / HS3_para(7) / HS3_para(1) + result_HS_charge(t_current, 3) * HS3_para(7) / HS3_para(1);    
+    result_HS_SOC(t_current+1, 3) = result_HS_SOC(t_current, 3) - result_HS_discharge(t_current, 3) / HS3_para(7) / HS3_para(1) + result_HS_charge(t_current, 3) * HS3_para(7) / HS3_para(1);
 end
 % 电网
 gridClearDemand = - sum(result_Ele,2); %1表示按列求和，2表示按行求和
@@ -373,12 +379,12 @@ for t_current = 1:24*period
         gridClearDemand = Grid1.getResult;
         [result_Ele(:,1), result_CHP_G(:,1), result_Boiler_G(:,1), result_ES_discharge(:,1), result_ES_charge(:,1), result_HS_discharge(:,1), result_HS_charge(:,1), result_ES_SOC(:,1), result_HS_SOC(:,1), EH1_Le, EH1_Lh, EH1_solarP, EH1_windP] = EH1.getResult;
         [result_Ele(:,2), result_CHP_G(:,2), result_Boiler_G(:,2), result_ES_discharge(:,2), result_ES_charge(:,2), result_HS_discharge(:,2), result_HS_charge(:,2), result_ES_SOC(:,2), result_HS_SOC(:,2), EH2_Le, EH2_Lh, EH2_solarP, EH2_windP] = EH2.getResult;
-        [result_Ele(:,3), result_CHP_G(:,3), result_Boiler_G(:,3), result_ES_discharge(:,3), result_ES_charge(:,3), result_HS_discharge(:,3), result_HS_charge(:,3), result_ES_SOC(:,3), result_HS_SOC(:,3), EH3_Le, EH3_Lh, EH3_solarP, EH3_windP] = EH3.getResult;   
+        [result_Ele(:,3), result_CHP_G(:,3), result_Boiler_G(:,3), result_ES_discharge(:,3), result_ES_charge(:,3), result_HS_discharge(:,3), result_HS_charge(:,3), result_ES_SOC(:,3), result_HS_SOC(:,3), EH3_Le, EH3_Lh, EH3_solarP, EH3_windP] = EH3.getResult;
     end
     
    
     
-    % 日内优化（分为正常运行、有离网）  
+    % 日内优化（分为正常运行、有离网）
 %     if off_grid == 0 % 正常运行
         EH1.predict(t_current);
         EH2.predict(t_current);
@@ -404,7 +410,7 @@ for t_current = 1:24*period
         EH2.conditionHandlePrice(priceArray, gasPrice1, t_current);
         EH3.conditionHandlePrice(priceArray, gasPrice3, t_current);
     
-%     else % IES1离网    
+%     else % IES1离网
 %     end
 end
 priceArray_record(:,2) = priceArray; %记录日内出清价格
@@ -435,89 +441,89 @@ iterationTimes = zeros(24*period, 2); %记录迭代次数
 global off_grid
 off_grid = 0; % 0表示正常运行，1表示IES1离网
 t_realtime = zeros(24*period,3);
-isDAsingle=0;
-if isDAsingle==0
+isDAsingle = 1;
+if isDAsingle == 0
     subgrad_dayahead_180729;
 end
 %用次梯度法解日前优化问题
 
 for t_current = 1:24*period
-    disp(['t_current is ',num2str(t_current)]);
-    if isDAsingle==1
-   
-    if t_current == 1 %则进行日前优化
-        tic
-        % 负荷和可再生能源的预测值没有变化
-%         EH1.predict(0);
-%         EH2.predict(0);
-%         EH3.predict(0);
-        for pt = t_current : 1 : 24*period
+%     disp(['t_current is ',num2str(t_current)]);
+    if isDAsingle == 1
+        
+        if t_current == 1 %则进行日前优化
             tic
-%             Grid1.zGenerate(elePrice(pt)); % 在当前优化周期内不变
-
-            % 最低价格，一般都是需求大于供给
-            priceArray(pt) = minMarketPrice;
-            [x,~,~,~,~] = EH1.handlePrice(priceArray, gasPrice1, pt);
-            clearDemand_minPrice_EH1 = x(1);
-            [x,~,~,~,~] = EH2.handlePrice(priceArray, gasPrice1, pt);
-            clearDemand_minPrice_EH2 = x(1);
-            [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice3, pt);
-            clearDemand_minPrice_EH3 = x(1);   
-            clearDemand_minPrice_grid = Grid1.handlePrice(priceArray(pt), pt);
-            clearDemand_minPrice = [clearDemand_minPrice_grid; clearDemand_minPrice_EH1; clearDemand_minPrice_EH2; clearDemand_minPrice_EH3]; % 需求为正，供给为负
-            
-            % 最高价格，一般都是供给大于需求
-            priceArray(pt) = maxMarketPrice;
-            [x,~,~,~,~] = EH1.handlePrice(priceArray, gasPrice1, pt);
-            clearDemand_maxPrice_EH1 = x(1);
-            [x,~,~,~,~] = EH2.handlePrice(priceArray, gasPrice1, pt);
-            clearDemand_maxPrice_EH2 = x(1);
-            [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice3, pt);
-            clearDemand_maxPrice_EH3 = x(1);   
-            clearDemand_maxPrice_grid = Grid1.handlePrice(priceArray(pt), pt);
-            clearDemand_maxPrice = [clearDemand_maxPrice_grid; clearDemand_maxPrice_EH1; clearDemand_maxPrice_EH2; clearDemand_maxPrice_EH3]; % 需求为正，供给为负
-            
-            iterationNumber = 2;
-            if sum(clearDemand_minPrice) * sum(clearDemand_maxPrice) <= 0 % 说明出清点在这个区间内，有两个问题，一是等于零是否直接结束，二是如果出清点不唯一怎么办
-                % 市场出清得到出清价格，并更新预测电价序列
-                [priceArray(pt), clearDemand] = iterativeClear(minMarketPrice, maxMarketPrice, clearDemand_minPrice, clearDemand_maxPrice, ee, priceArray, gasPrice1, gasPrice3, pt);
-            else
-                disp('Clearing point is not in the given interval.')
+            % 负荷和可再生能源的预测值没有变化
+            %         EH1.predict(0);
+            %         EH2.predict(0);
+            %         EH3.predict(0);
+            for pt = t_current : 1 : 24*period
+                tic
+                %             Grid1.zGenerate(elePrice(pt)); % 在当前优化周期内不变
+                
+                % 最低价格，一般都是需求大于供给
+                priceArray(pt) = minMarketPrice;
+                [x,~,~,~,~] = EH1.handlePrice(priceArray, gasPrice1, pt);
+                clearDemand_minPrice_EH1 = x(1);
+                [x,~,~,~,~] = EH2.handlePrice(priceArray, gasPrice1, pt);
+                clearDemand_minPrice_EH2 = x(1);
+                [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice3, pt);
+                clearDemand_minPrice_EH3 = x(1);
+                clearDemand_minPrice_grid = Grid1.handlePrice(priceArray(pt), pt);
+                clearDemand_minPrice = [clearDemand_minPrice_grid; clearDemand_minPrice_EH1; clearDemand_minPrice_EH2; clearDemand_minPrice_EH3]; % 需求为正，供给为负
+                
+                % 最高价格，一般都是供给大于需求
+                priceArray(pt) = maxMarketPrice;
+                [x,~,~,~,~] = EH1.handlePrice(priceArray, gasPrice1, pt);
+                clearDemand_maxPrice_EH1 = x(1);
+                [x,~,~,~,~] = EH2.handlePrice(priceArray, gasPrice1, pt);
+                clearDemand_maxPrice_EH2 = x(1);
+                [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice3, pt);
+                clearDemand_maxPrice_EH3 = x(1);
+                clearDemand_maxPrice_grid = Grid1.handlePrice(priceArray(pt), pt);
+                clearDemand_maxPrice = [clearDemand_maxPrice_grid; clearDemand_maxPrice_EH1; clearDemand_maxPrice_EH2; clearDemand_maxPrice_EH3]; % 需求为正，供给为负
+                
+                iterationNumber = 2;
+                if sum(clearDemand_minPrice) * sum(clearDemand_maxPrice) <= 0 % 说明出清点在这个区间内，有两个问题，一是等于零是否直接结束，二是如果出清点不唯一怎么办
+                    % 市场出清得到出清价格，并更新预测电价序列
+                    [priceArray(pt), clearDemand] = iterativeClear(minMarketPrice, maxMarketPrice, clearDemand_minPrice, clearDemand_maxPrice, ee, priceArray, gasPrice1, gasPrice3, pt);
+                else
+                    disp('Clearing point is not in the given interval.')
+                end
+                iterationTimes(pt,1) = iterationNumber;
+                
+                % 得到出清价格后，还要明确出清功率（EH更新自身状态），但此时不能保证各出清功率之和为零？
+                gridClearDemand(pt) = clearDemand(1);
+                EH1.conditionHandlePrice_2(priceArray, gasPrice1, pt, clearDemand(2));
+                EH2.conditionHandlePrice_2(priceArray, gasPrice1, pt, clearDemand(3));
+                EH3.conditionHandlePrice_2(priceArray, gasPrice3, pt, clearDemand(4));
+                
             end
-            iterationTimes(pt,1) = iterationNumber;
             
-            % 得到出清价格后，还要明确出清功率（EH更新自身状态），但此时不能保证各出清功率之和为零？
-            gridClearDemand(pt) = clearDemand(1);
-            EH1.conditionHandlePrice_2(priceArray, gasPrice1, pt, clearDemand(2));
-            EH2.conditionHandlePrice_2(priceArray, gasPrice1, pt, clearDemand(3));
-            EH3.conditionHandlePrice_2(priceArray, gasPrice3, pt, clearDemand(4));
+            priceArray_record(:,1) = priceArray;
+            t_dayahead = toc; %这个时间不准确，因为3个IES应该是并行计算的
             
+            % 日前优化的结果
+            [result_Ele_pre(:,1), result_CHP_G(:,1), result_Boiler_G(:,1), result_ES_discharge(:,1), result_ES_charge(:,1), result_HS_discharge(:,1), result_HS_charge(:,1), result_ES_SOC(:,1), result_HS_SOC(:,1), EH1_Le, EH1_Lh, EH1_solarP, EH1_windP] = EH1.getResult;
+            [result_Ele_pre(:,2), result_CHP_G(:,2), result_Boiler_G(:,2), result_ES_discharge(:,2), result_ES_charge(:,2), result_HS_discharge(:,2), result_HS_charge(:,2), result_ES_SOC(:,2), result_HS_SOC(:,2), EH2_Le, EH2_Lh, EH2_solarP, EH2_windP] = EH2.getResult;
+            [result_Ele_pre(:,3), result_CHP_G(:,3), result_Boiler_G(:,3), result_ES_discharge(:,3), result_ES_charge(:,3), result_HS_discharge(:,3), result_HS_charge(:,3), result_ES_SOC(:,3), result_HS_SOC(:,3), EH3_Le, EH3_Lh, ~, EH3_windP] = EH3.getResult;
         end
-        
-        priceArray_record(:,1) = priceArray;
-        t_dayahead = toc; %这个时间不准确，因为3个IES应该是并行计算的
-        
-        % 日前优化的结果
-        [result_Ele(:,1), result_CHP_G(:,1), result_Boiler_G(:,1), result_ES_discharge(:,1), result_ES_charge(:,1), result_HS_discharge(:,1), result_HS_charge(:,1), result_ES_SOC(:,1), result_HS_SOC(:,1), EH1_Le, EH1_Lh, EH1_solarP, EH1_windP] = EH1.getResult;
-        [result_Ele(:,2), result_CHP_G(:,2), result_Boiler_G(:,2), result_ES_discharge(:,2), result_ES_charge(:,2), result_HS_discharge(:,2), result_HS_charge(:,2), result_ES_SOC(:,2), result_HS_SOC(:,2), EH2_Le, EH2_Lh, EH2_solarP, EH2_windP] = EH2.getResult;
-        [result_Ele(:,3), result_CHP_G(:,3), result_Boiler_G(:,3), result_ES_discharge(:,3), result_ES_charge(:,3), result_HS_discharge(:,3), result_HS_charge(:,3), result_ES_SOC(:,3), result_HS_SOC(:,3), EH3_Le, EH3_Lh, ~, EH3_windP] = EH3.getResult;
+        clearDemand_grid_sin = sum(result_Ele_pre');
+        priceArray_pre_sin=priceArray;
     end
-    clearDemand_grid_sin=sum(result_Ele');    
-    priceArray_pre_sin=priceArray;
-    end
-
+    
     off_grid = 0;
     
-    % 日内优化，分为正常运行和EH1离网   
+    % 日内优化，分为正常运行和EH1离网
     if t_current==11
-       a=1; 
+        a=1;
     end
     if off_grid == 0 % 正常运行
         EH1.predict(t_current);
         EH2.predict(t_current);
         EH3.predict(t_current);
         
-%         Grid1.zGenerate(elePrice(t_current)); %在当前优化周期内不变
+        %         Grid1.zGenerate(elePrice(t_current)); %在当前优化周期内不变
         
         % 最低价格，一般都是需求大于供给
         priceArray(t_current) = minMarketPrice;
@@ -529,7 +535,7 @@ for t_current = 1:24*period
         clearDemand_minPrice_EH3 = x(1);
         clearDemand_minPrice_grid = Grid1.handlePrice(priceArray(t_current), t_current);
         clearDemand_minPrice = [clearDemand_minPrice_grid; clearDemand_minPrice_EH1; clearDemand_minPrice_EH2; clearDemand_minPrice_EH3]; % 需求为正，供给为负
-            
+        
         % 最高价格，一般都是供给大于需求
         priceArray(t_current) = maxMarketPrice;
         [x,~,~,~,~] = EH1.handlePrice(priceArray, gasPrice1, t_current);
@@ -540,7 +546,7 @@ for t_current = 1:24*period
         clearDemand_maxPrice_EH3 = x(1);
         clearDemand_maxPrice_grid = Grid1.handlePrice(priceArray(t_current), t_current);
         clearDemand_maxPrice = [clearDemand_maxPrice_grid; clearDemand_maxPrice_EH1; clearDemand_maxPrice_EH2; clearDemand_maxPrice_EH3]; % 需求为正，供给为负
-            
+        
         iterationNumber = 2;
         if sum(clearDemand_minPrice) * sum(clearDemand_maxPrice) <= 0 % 说明出清点在这个区间内，有两个问题，一是等于零是否直接结束，二是如果出清点不唯一怎么办
             %市场出清得到出清价格，并更新预测电价序列
@@ -558,34 +564,34 @@ for t_current = 1:24*period
         
     else % IES1离网
         
-%         EH1.predict(t_current);
+        %         EH1.predict(t_current);
         EH2.predict(t_current);
         EH3.predict(t_current);
         
-%         Grid1.zGenerate(elePrice(t_current)); %在当前优化周期内不变
+        %         Grid1.zGenerate(elePrice(t_current)); %在当前优化周期内不变
         
         % 最低价格，一般都是需求大于供给
         priceArray(t_current) = minMarketPrice;
-%         [x,~,~,~,~] = EH1.handlePrice(priceArray, gasPrice1, t_current);
-%         clearDemand_minPrice_EH1 = x(1);
+        %         [x,~,~,~,~] = EH1.handlePrice(priceArray, gasPrice1, t_current);
+        %         clearDemand_minPrice_EH1 = x(1);
         [x,~,~,~,~] = EH2.handlePrice(priceArray, gasPrice1, t_current);
         clearDemand_minPrice_EH2 = x(1);
         [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice3, t_current);
         clearDemand_minPrice_EH3 = x(1);
         clearDemand_minPrice_grid = Grid1.handlePrice(priceArray(t_current), t_current);
         clearDemand_minPrice = [clearDemand_minPrice_grid; clearDemand_minPrice_EH2; clearDemand_minPrice_EH3]; % 需求为正，供给为负
-            
+        
         % 最高价格，一般都是供给大于需求
         priceArray(t_current) = maxMarketPrice;
-%         [x,~,~,~,~] = EH1.handlePrice(priceArray, gasPrice1, t_current);
-%         clearDemand_maxPrice_EH1 = x(1);
+        %         [x,~,~,~,~] = EH1.handlePrice(priceArray, gasPrice1, t_current);
+        %         clearDemand_maxPrice_EH1 = x(1);
         [x,~,~,~,~] = EH2.handlePrice(priceArray, gasPrice1, t_current);
         clearDemand_maxPrice_EH2 = x(1);
         [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice3, t_current);
         clearDemand_maxPrice_EH3 = x(1);
         clearDemand_maxPrice_grid = Grid1.handlePrice(priceArray(t_current), t_current);
         clearDemand_maxPrice = [clearDemand_maxPrice_grid; clearDemand_maxPrice_EH2; clearDemand_maxPrice_EH3]; % 需求为正，供给为负
-            
+        
         iterationNumber = 2;
         if sum(clearDemand_minPrice) * sum(clearDemand_maxPrice) <= 0 % 说明出清点在这个区间内，有两个问题，一是等于零是否直接结束，二是如果出清点不唯一怎么办
             %市场出清得到出清价格，并更新预测电价序列
@@ -597,10 +603,10 @@ for t_current = 1:24*period
         
         % 得到出清价格后，还要明确出清功率（EH更新自身状态）
         gridClearDemand(t_current) = clearDemand(1);
-%         EH1.conditionHandlePrice_2(priceArray, gasPrice1, t_current, clearDemand(2));
+        %         EH1.conditionHandlePrice_2(priceArray, gasPrice1, t_current, clearDemand(2));
         EH2.conditionHandlePrice_2(priceArray, gasPrice1, t_current, clearDemand(2));
         EH3.conditionHandlePrice_2(priceArray, gasPrice3, t_current, clearDemand(3));
-    
+        
     end
 end
 priceArray_record(:,2) = priceArray;
@@ -647,7 +653,7 @@ for t_current = 1:24*period
             
             lamda_old = -10;
             lamda_new = 0.0; %取初始值：对预测电价没有偏差
-            lamda_record = zeros(maxIteration+1, 1);            
+            lamda_record = zeros(maxIteration+1, 1);
             lamda_record(number) = lamda_new;
             
             lamda_avg_old = lamda_old;
@@ -682,7 +688,7 @@ for t_current = 1:24*period
                 f1 = - lamda_new;
                 lb1 = eleLimit_total(2);
                 ub1 = eleLimit_total(1);
-                [clearDemand_grid_new, value1, flag1]  = linprog(f1, [], [], [], [], lb1, ub1);    
+                [clearDemand_grid_new, value1, flag1]  = linprog(f1, [], [], [], [], lb1, ub1);
                 
                 % 存储老的clearDemand，计算新的clearDemand，并记录
                 if number>1
@@ -703,11 +709,11 @@ for t_current = 1:24*period
                 % 系数bb：新值占平均值的比例
                 bb = 1/number; % 方法一：平均值，实际就是 = (lamda_avg_old * (number-1) + lamda_new * 1) / number;
                 % bb = 0.5; % 方法二：加权平均，重视新值，试了结果不能收敛
-                lamda_avg_new = lamda_avg_old * (1-bb) + lamda_new * bb; 
+                lamda_avg_new = lamda_avg_old * (1-bb) + lamda_new * bb;
                 lamda_avg_record(number) = lamda_avg_new;
                 
 %                 lamdaArrayAvg_new = sum(lamdaArray) / length(lamdaArray); %方法一
-%                 lamda_avg_new = 1 / length(lamda_record) * lamda_record(number) + (length(lamda_record)-1) / length(lamda_record) * lamda_avg_old; %方法二                    
+%                 lamda_avg_new = 1 / length(lamda_record) * lamda_record(number) + (length(lamda_record)-1) / length(lamda_record) * lamda_avg_old; %方法二
             end
             
             % 否则停止迭代
@@ -761,7 +767,7 @@ for t_current = 1:24*period
     
     
     
-    % 日内优化，分为正常运行和EH1离网   
+    % 日内优化，分为正常运行和EH1离网
     if off_grid == 0 % 正常运行
         EH1.predict(t_current);
         EH2.predict(t_current);
@@ -785,7 +791,7 @@ for t_current = 1:24*period
         while number<=2 || abs(lamda_avg_new - lamda_avg_old) > ee || sum(clearDemand_new) * sum(clearDemand_old) > 1e-4  %1e-6, 不能直接取0
             % 后一个条件是因为即使lamda收敛后，供需也不平衡，所以需要取一正一负两个点，来求零点
             % && || 的前一个为否，则后一个就不计算了
-            % 要求至少迭代两次（number=1，2）     
+            % 要求至少迭代两次（number=1，2）
             
             if number > maxIteration
                 error('超出最大迭代次数');
@@ -858,7 +864,7 @@ for t_current = 1:24*period
         gridClearDemand(t_current) = clearDemand(1);
         EH1.conditionHandlePrice_2(priceArray, gasPrice1, t_current, clearDemand(2));
         EH2.conditionHandlePrice_2(priceArray, gasPrice1, t_current, clearDemand(3));
-        EH3.conditionHandlePrice_2(priceArray, gasPrice3, t_current, clearDemand(4)); 
+        EH3.conditionHandlePrice_2(priceArray, gasPrice3, t_current, clearDemand(4));
         
     else % IES1离网
     end
