@@ -277,9 +277,8 @@ classdef EH_local_170828_v3 < handle
             obj.HS_SOC(t_current+1) = obj.HS_SOC(t_current) - obj.result_HS_discharge(t_current) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(t_current) * obj.HS_eff / obj.HS_totalC;
         end
         
-        
-        % 用于TC迭代出清 二分法
         % 接收市场出清价格、出清功率，在保持出清功率不变的情况下，求解最优化
+        % 只更新当前状态
         function [x,fval,exitflag,output,lambda] = conditionHandlePrice_2(obj, Eprice, Gprice, t_current, clearDemand) %这里的x随着t_current会越来越少
             global period
             conditionEle = clearDemand;
@@ -302,27 +301,26 @@ classdef EH_local_170828_v3 < handle
         end
         
         
-        
-        function [x,fval,exitflag,output,lambda] = conditionHandlePrice_DA(obj, Eprice, Gprice, t_current, clearDemand) %这里的x随着t_current会越来越少
+        % _DA为全时段日前优化，因此一次性更新后续所有时段的信息
+        function [x,fval,exitflag,output,lambda] = conditionHandlePrice_all(obj, Eprice, Gprice, t_current, clearDemand) %这里的x随着t_current会越来越少
             global period
             conditionEle = clearDemand;
             
             [x,fval,exitflag,output,lambda] = localOptimal(obj, Eprice, Gprice, t_current, conditionEle);
             time = 24*period - t_current + 1; %总时间段
             for pt = t_current: 24 * period
-            % 只执行当前周期的结果
-            obj.result_Ele(pt) = x(1 + pt - t_current);
-            obj.result_CHP_G(pt) = x(time + 1 + pt - t_current);
-            obj.result_Boiler_G(pt) = x(time*2 + 1 + pt - t_current);
-            obj.result_ES_discharge(pt) = x(time*3 + 1 + pt - t_current);
-            obj.result_ES_charge(pt) = x(time*4 + 1 + pt - t_current);
-            obj.result_HS_discharge(pt) = x(time*5 + 1 + pt - t_current);
-            obj.result_HS_charge(pt) = x(time*6 + 1 + pt - t_current);
-            
-            %更新储能状态
-            obj.ES_SOC(pt+1) = obj.ES_SOC(pt) - obj.result_ES_discharge(pt) / obj.ES_eff / obj.ES_totalC + obj.result_ES_charge(pt) * obj.ES_eff / obj.ES_totalC;
-            obj.HS_SOC(pt+1) = obj.HS_SOC(pt) - obj.result_HS_discharge(pt) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(pt) * obj.HS_eff / obj.HS_totalC;
-        
+                obj.result_Ele(pt) = x(1 + pt - t_current);
+                obj.result_CHP_G(pt) = x(time + 1 + pt - t_current);
+                obj.result_Boiler_G(pt) = x(time*2 + 1 + pt - t_current);
+                obj.result_ES_discharge(pt) = x(time*3 + 1 + pt - t_current);
+                obj.result_ES_charge(pt) = x(time*4 + 1 + pt - t_current);
+                obj.result_HS_discharge(pt) = x(time*5 + 1 + pt - t_current);
+                obj.result_HS_charge(pt) = x(time*6 + 1 + pt - t_current);
+                
+                %更新储能状态
+                obj.ES_SOC(pt+1) = obj.ES_SOC(pt) - obj.result_ES_discharge(pt) / obj.ES_eff / obj.ES_totalC + obj.result_ES_charge(pt) * obj.ES_eff / obj.ES_totalC;
+                obj.HS_SOC(pt+1) = obj.HS_SOC(pt) - obj.result_HS_discharge(pt) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(pt) * obj.HS_eff / obj.HS_totalC;
+                
             end
         end
         % 输出优化结果
@@ -364,7 +362,7 @@ classdef EH_local_170828_v3 < handle
             %将当前时刻的购电量，最小值和最大值都设定为给定值
             
             global period
-            time = 24*period - t_current + 1; %总时间段
+            time = 24 * period - t_current + 1; %总时间段
             var = time * 7; %总变量数
             %第1,2,3组time是购电量、CHP购气量、锅炉购气量，第4-7组time是储电、储热的放、充功率
             

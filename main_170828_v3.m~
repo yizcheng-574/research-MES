@@ -192,4 +192,3 @@
             all_temporal;
         end
         %单时段滚动求解
-        single_temporal;
