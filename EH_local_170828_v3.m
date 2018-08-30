@@ -8,13 +8,6 @@
 %2017.8.28 ver2.0 改为class
 %2018.1.10 ver3.0 market信息改用全局变量，对储能的又充又放采用等效的线性优化方法，时间间隔改为15min
 
-% f2=[-13;-23];
-% A2=[5,15; 4,4; 35,20;];
-% b2=[480,160,1190];
-% lb=[0;0];
-% [x,fval,exitflag,output,lambda] = linprog(f2,A2,b2,[],[],lb,[])
-
-
 
 classdef EH_local_170828_v3 < handle
     properties %可以设初始值
@@ -82,7 +75,8 @@ classdef EH_local_170828_v3 < handle
     
     methods
         
-        function obj = EH_local_170828_v3(eleLimit, gasLimit, Le_base, Lh_base, solar_base, wind_base, CHP_para, Boiler_para, ES_para, HS_para, dev_load, dev_solar, dev_wind, solar_rate, wind_rate)
+        function obj = EH_local_170828_v3(eleLimit, gasLimit, Le_base, Lh_base, solar_base, wind_base, ...
+                CHP_para, Boiler_para, ES_para, HS_para, dev_load, dev_solar, dev_wind, solar_rate, wind_rate)
             
             global priceNumbers period
             
@@ -193,7 +187,6 @@ classdef EH_local_170828_v3 < handle
                 %                 end
                 %                 obj.solarP = obj.solarP + solarP_error; %更新
                 %                 obj.windP = obj.windP + windP_error;
-                %改为只计当前时刻的预测误差，否则累计的误差过大；频繁重复预测也不科学
                 solarP_error = randn() * obj.solarP(t_current) * obj.dev_PV; %预测误差，solarP(t_current)=0的时候自然为零
                 windP_error = randn() * obj.windP(t_current) * obj.dev_WT; %预测误差
                 
@@ -218,6 +211,7 @@ classdef EH_local_170828_v3 < handle
         
         
         %通过多次解最优化，构造投标函数
+        %{
         function demand_curve_result = curveGenerate(obj, Eprice, Gprice, t_current) %接收电价、气价、当前时间
             % predict(obj, t_current); %更新本地的负荷预测
             global minMarketPrice step priceNumbers
@@ -230,6 +224,7 @@ classdef EH_local_170828_v3 < handle
             
             demand_curve_result = obj.demand_curve;
         end
+        %}
         
         
         %接收市场出清价格，做自治优化，更新自身状态
@@ -254,8 +249,9 @@ classdef EH_local_170828_v3 < handle
         end
         
         
-        % 用于TC单次出清
+        %用于TC单次出清
         %接收市场出清价格，按投标曲线得到出清功率，在保持出清功率不变的情况下，求解最优化
+        %{
         function [x,fval,exitflag,output,lambda] = conditionHandlePrice(obj, Eprice, Gprice, t_current) %这里的x随着t_current会越来越少
             global period
             conditionEle = getClearDemand(obj.demand_curve, Eprice(t_current));
@@ -276,6 +272,7 @@ classdef EH_local_170828_v3 < handle
             obj.ES_SOC(t_current+1) = obj.ES_SOC(t_current) - obj.result_ES_discharge(t_current) / obj.ES_eff / obj.ES_totalC + obj.result_ES_charge(t_current) * obj.ES_eff / obj.ES_totalC;
             obj.HS_SOC(t_current+1) = obj.HS_SOC(t_current) - obj.result_HS_discharge(t_current) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(t_current) * obj.HS_eff / obj.HS_totalC;
         end
+        %}
         
         % 接收市场出清价格、出清功率，在保持出清功率不变的情况下，求解最优化
         % 只更新当前状态
@@ -365,8 +362,6 @@ classdef EH_local_170828_v3 < handle
             time = 24 * period - t_current + 1; %总时间段
             var = time * 7; %总变量数
             %第1,2,3组time是购电量、CHP购气量、锅炉购气量，第4-7组time是储电、储热的放、充功率
-            
-            
             
             %求一次项系数f 是个列向量
             f = zeros(var, 1);
