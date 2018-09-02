@@ -22,6 +22,11 @@ classdef EH_local_170828_v3 < handle
         dev_PV;
         dev_WT;
         
+        %新增dr
+        Le_drP_rate;
+        Le_drP_total;
+        Lh_drP_rate;
+        Lh_drP_total;
         %CHP的参数
         CHP_GE_eff;
         CHP_GH_eff;
@@ -71,12 +76,15 @@ classdef EH_local_170828_v3 < handle
         result_ES_charge;
         result_HS_discharge;
         result_HS_charge;
+        result_E_dr;
+        result_H_dr;
     end
     
     methods
         
         function obj = EH_local_170828_v3(eleLimit, gasLimit, Le_base, Lh_base, solar_base, wind_base, ...
-                CHP_para, Boiler_para, ES_para, HS_para, dev_load, dev_solar, dev_wind, solar_rate, wind_rate)
+                CHP_para, Boiler_para, ES_para, HS_para, dev_load, dev_solar, dev_wind, solar_rate, wind_rate,...
+                Le_dr_rate, Le_dr_total, Lh_dr_rate, Lh_dr_total)
             
             global priceNumbers period
             
@@ -97,6 +105,12 @@ classdef EH_local_170828_v3 < handle
             obj.dev_L = dev_load; %百分数
             obj.dev_PV = dev_solar;
             obj.dev_WT = dev_wind;
+            
+            %新增dr参数
+            obj.Le_drP_rate = Le_dr_rate;
+            obj.Le_drP_total = Le_dr_total;
+            obj.Lh_drP_rate = Lh_dr_rate;
+            obj.Lh_drP_total = Lh_dr_total;
             
             %CHP的参数
             obj.CHP_GE_eff = CHP_para(1);
@@ -133,6 +147,11 @@ classdef EH_local_170828_v3 < handle
             obj.HS_SOC = zeros(24*period+1,1);
             obj.HS_SOC(1) = HS_para(4);
             obj.result_Ele = zeros(24*period,1);
+            
+            %新增可平移负荷水平
+            obj.result_E_dr = zeros (24*period,1);
+            obj.result_H_dr = zeros (24*period,1);
+             
             obj.result_CHP_G = zeros(24*period,1);
             obj.result_Boiler_G = zeros(24*period,1);
             obj.result_ES_discharge = zeros(24*period,1);
@@ -229,23 +248,7 @@ classdef EH_local_170828_v3 < handle
         
         %接收市场出清价格，做自治优化，更新自身状态
         function [x,fval,exitflag,output,lambda] = handlePrice(obj, Eprice, Gprice, t_current) %这里的x随着t_current会越来越少
-            global period
-            
             [x,fval,exitflag,output,lambda] = localOptimal(obj, Eprice, Gprice, t_current, 9e9); % conditionEle = 9e9
-            time = 24*period - t_current + 1; %总时间段
-            
-            % 只执行当前周期的结果
-            obj.result_Ele(t_current) = x(1);
-            obj.result_CHP_G(t_current) = x(time+1);
-            obj.result_Boiler_G(t_current) = x(time*2+1);
-            obj.result_ES_discharge(t_current) = x(time*3+1);
-            obj.result_ES_charge(t_current) = x(time*4+1);
-            obj.result_HS_discharge(t_current) = x(time*5+1);
-            obj.result_HS_charge(t_current) = x(time*6+1);
-            
-            %更新储能状态
-            obj.ES_SOC(t_current+1) = obj.ES_SOC(t_current) - obj.result_ES_discharge(t_current) / obj.ES_eff / obj.ES_totalC + obj.result_ES_charge(t_current) * obj.ES_eff / obj.ES_totalC;
-            obj.HS_SOC(t_current+1) = obj.HS_SOC(t_current) - obj.result_HS_discharge(t_current) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(t_current) * obj.HS_eff / obj.HS_totalC;
         end
         
         
@@ -291,7 +294,8 @@ classdef EH_local_170828_v3 < handle
             obj.result_ES_charge(t_current) = x(time*4+1);
             obj.result_HS_discharge(t_current) = x(time*5+1);
             obj.result_HS_charge(t_current) = x(time*6+1);
-            
+            obj.result_E_dr(t_current) = x(time*7+1);
+            obj.result_H_dr(t_current) = x(time*8+1);
             %更新储能状态
             obj.ES_SOC(t_current+1) = obj.ES_SOC(t_current) - obj.result_ES_discharge(t_current) / obj.ES_eff / obj.ES_totalC + obj.result_ES_charge(t_current) * obj.ES_eff / obj.ES_totalC;
             obj.HS_SOC(t_current+1) = obj.HS_SOC(t_current) - obj.result_HS_discharge(t_current) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(t_current) * obj.HS_eff / obj.HS_totalC;
@@ -313,7 +317,9 @@ classdef EH_local_170828_v3 < handle
                 obj.result_ES_charge(pt) = x(time*4 + 1 + pt - t_current);
                 obj.result_HS_discharge(pt) = x(time*5 + 1 + pt - t_current);
                 obj.result_HS_charge(pt) = x(time*6 + 1 + pt - t_current);
-                
+                %新增可平移负荷水平
+                obj.result_E_dr(pt) = x(time*7+ 1 +pt -t_current);
+                obj.result_H_dr(pt) = x(time*8+ 1 +pt -t_current);
                 %更新储能状态
                 obj.ES_SOC(pt+1) = obj.ES_SOC(pt) - obj.result_ES_discharge(pt) / obj.ES_eff / obj.ES_totalC + obj.result_ES_charge(pt) * obj.ES_eff / obj.ES_totalC;
                 obj.HS_SOC(pt+1) = obj.HS_SOC(pt) - obj.result_HS_discharge(pt) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(pt) * obj.HS_eff / obj.HS_totalC;
@@ -321,7 +327,7 @@ classdef EH_local_170828_v3 < handle
             end
         end
         % 输出优化结果
-        function [Ele, G_CHP, G_Boiler, ES_discharge, ES_charge, HS_discharge, HS_charge, ES_SOC, HS_SOC, Le, Lh, solarP, windP] = getResult(obj)
+        function [Ele, G_CHP, G_Boiler, ES_discharge, ES_charge, HS_discharge, HS_charge, ES_SOC, HS_SOC, Le, Lh, solarP, windP, Edr, Hdr] = getResult(obj)
             Ele = obj.result_Ele;
             G_CHP = obj.result_CHP_G;
             G_Boiler = obj.result_Boiler_G;
@@ -336,6 +342,9 @@ classdef EH_local_170828_v3 < handle
             Lh = obj.Lh;
             solarP = obj.solarP;
             windP = obj.windP;
+            %新增负荷水平
+            Edr= obj.result_E_dr;
+            Hdr= obj.result_H_dr;
         end
         
         
@@ -343,8 +352,8 @@ classdef EH_local_170828_v3 < handle
         % 测试优化结果
         function [result_balance_P, result_balance_H, result_check_ES, result_check_HS] = testResult(obj)
             %电、热功率平衡性测试，降低要求至大于零
-            result_balance_P = obj.result_Ele + obj.CHP_GE_eff.*obj.result_CHP_G + obj.result_ES_discharge - obj.result_ES_charge - obj.Le + obj.windP + obj.solarP;
-            result_balance_H = obj.CHP_GH_eff.*obj.result_CHP_G + obj.Boiler_eff.*obj.result_Boiler_G + obj.result_HS_discharge - obj.result_HS_charge - obj.Lh;
+            result_balance_P = obj.result_Ele + obj.CHP_GE_eff.*obj.result_CHP_G + obj.result_ES_discharge - obj.result_ES_charge - obj.Le + obj.windP + obj.solarP -obj.result_E_dr;
+            result_balance_H = obj.CHP_GH_eff.*obj.result_CHP_G + obj.Boiler_eff.*obj.result_Boiler_G + obj.result_HS_discharge - obj.result_HS_charge - obj.Lh-obj.result_H_dr;
             %充、放功率至少有一个是零
             result_check_ES = obj.result_ES_discharge .* obj.result_ES_charge;
             result_check_HS = obj.result_HS_discharge .* obj.result_HS_charge; %有一点小问题，因为热过于充裕
@@ -360,8 +369,9 @@ classdef EH_local_170828_v3 < handle
             
             global period
             time = 24 * period - t_current + 1; %总时间段
-            var = time * 7; %总变量数
+            var = time * 9; %总变量数
             %第1,2,3组time是购电量、CHP购气量、锅炉购气量，第4-7组time是储电、储热的放、充功率
+            %第8-9组是当前电和热的可平移负荷水平
             
             %求一次项系数f 是个列向量
             f = zeros(var, 1);
@@ -383,15 +393,13 @@ classdef EH_local_170828_v3 < handle
                 ub(time*4+i, 1) = obj.ES_Pmax;
                 ub(time*5+i, 1) = obj.HS_Hmax;
                 ub(time*6+i, 1) = obj.HS_Hmax;
+                ub(time*7+i, 1) = obj.Le_drP_rate;
+                ub(time*8+i, 1) = obj.Lh_drP_rate;
             end
             for i = 1 : time
                 lb(i, 1) = obj.Ele_min;
                 lb(time+i, 1) = obj.CHP_G_min;
-                %                     lb(time*2+i, 1) = 0;
-                %                     lb(time*3+i, 1) = 0;
-                %                     lb(time*4+i, 1) = 0;
-                %                     lb(time*5+i, 1) = 0;
-                %                     lb(time*6+i, 1) = 0;
+
             end
             if length(conditionEle)>1
                 ub(1:length(conditionEle),1) = conditionEle;
@@ -418,15 +426,28 @@ classdef EH_local_170828_v3 < handle
                 Aeq_Ebus(i,time+i) = - obj.CHP_GE_eff;
                 Aeq_Ebus(i,time*3+i) = - 1; %放电
                 Aeq_Ebus(i,time*4+i) = 1; %充电
+                Aeq_Ebus(i,time*7+i) = 1;
             end
             for i=1:time
                 Aeq_Hbus(i,time+i) = - obj.CHP_GH_eff;
                 Aeq_Hbus(i,time*2+i) = - obj.Boiler_eff;
                 Aeq_Hbus(i,time*5+i) = - 1; %放热
                 Aeq_Hbus(i,time*6+i) = 1; %充热
+                Aeq_Hbus(i,time*8+i) = 1;
             end
             
+            %可平移负荷约束
+            Aeq_Edr = zeros(1, var);
+            beq_Edr = obj.Le_drP_total - sum(obj.result_E_dr(1:t_current-1));
+            for i=1:time
+                Aeq_Edr(1, time*7+i) = 1;
+            end
             
+            Aeq_Hdr = zeros(1, var);
+            beq_Hdr = obj.Lh_drP_total - sum(obj.result_H_dr(1:t_current-1));
+            for i=1:time
+                Aeq_Hdr(1, time*8+i) = 1;
+            end
             %电、热储能平衡性约束
             Aeq_ES = zeros(1, var);
             beq_ES = - (obj.ES_targetSOC - obj.ES_SOC(t_current)) * obj.ES_totalC;
@@ -492,8 +513,8 @@ classdef EH_local_170828_v3 < handle
             %归纳所有线性约束
             %等式约束包括：电、热平衡约束（改为不等式），电、热储能平衡性约束（改为不等式）
             %不等式约束包括：SOC约束，购气量和的约束，（爬坡率约束）
-            Aeq=[];
-            beq=[];
+            Aeq=[Aeq_Edr; Aeq_Hdr];
+            beq=[beq_Edr; beq_Hdr];
             A=[Aeq_Ebus; Aeq_Hbus;   Aeq_ES; Aeq_HS;    A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
             b=[beq_Ebus; beq_Hbus;   beq_ES; beq_HS;    b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
             

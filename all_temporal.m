@@ -1,10 +1,11 @@
         %全时段的优化问题，与single_temporal比较
         %次梯度法求解
         global elePrice period
-        iterativeStep = 1e-5; %0.00001 0.0001  
-        delta_lambda_max = 1e-3;
-        maxIteration = 100; %最大迭代次数
-        ee = 0.1 * delta_lambda_max; 
+        iterativeStep = 1e-6 ;
+        stepArray= iterativeStep * ones(24 * period - time + 1, 1); %0.00001 0.0001  
+        delta_lambda_max = 1e-4;
+        maxIteration = 3000; %最大迭代次数
+        ee = 0.001; 
 
         number = 1;
         lamda_old = -10 * ones(24 * period - time + 1, 1);
@@ -55,14 +56,16 @@
 
             clearDemand_new = [-clearDemand_grid_new , clearDemand_EH1_new , clearDemand_EH2_new , clearDemand_EH3_new] ;
             balanceDemand = sum(clearDemand_new, 2) ;
+%             for i = 1: 24 * period - time + 1
+%                 if clearDemand_record(i , number)
+%                 
+%             end
             clearDemand_record(: , number) = balanceDemand;
             max_balance(number) = max(abs(balanceDemand));
             
             % 存储老的lamda，计算新的lamda（通过梯度法），并记录
             lamda_old = lamda_new;
-            delta_lambda = balanceDemand * iterativeStep;
-            delta_lambda(delta_lambda > delta_lambda_max) = delta_lambda_max;
-            delta_lambda(delta_lambda < -delta_lambda_max) = -delta_lambda_max;
+            delta_lambda = balanceDemand .* stepArray;
             lamda_new = lamda_old +  delta_lambda;
 
             number = number + 1;
@@ -111,9 +114,9 @@
 
         % 日前优化的结果
         if time == 24 * period
-            [result_Ele(:,1), result_CHP_G(:,1), result_Boiler_G(:,1), result_ES_discharge(:,1), result_ES_charge(:,1), result_HS_discharge(:,1), result_HS_charge(:,1), result_ES_SOC(:,1), result_HS_SOC(:,1), EH1_Le, EH1_Lh, EH1_solarP, EH1_windP] = EH1.getResult;
-            [result_Ele(:,2), result_CHP_G(:,2), result_Boiler_G(:,2), result_ES_discharge(:,2), result_ES_charge(:,2), result_HS_discharge(:,2), result_HS_charge(:,2), result_ES_SOC(:,2), result_HS_SOC(:,2), EH2_Le, EH2_Lh, EH2_solarP, EH2_windP] = EH2.getResult;
-            [result_Ele(:,3), result_CHP_G(:,3), result_Boiler_G(:,3), result_ES_discharge(:,3), result_ES_charge(:,3), result_HS_discharge(:,3), result_HS_charge(:,3), result_ES_SOC(:,3), result_HS_SOC(:,3), EH3_Le, EH3_Lh, EH3_solarP, EH3_windP] = EH3.getResult;
+            [result_Ele(:,1), result_CHP_G(:,1), result_Boiler_G(:,1), result_ES_discharge(:,1), result_ES_charge(:,1), result_HS_discharge(:,1), result_HS_charge(:,1), result_ES_SOC(:,1), result_HS_SOC(:,1), EH1_Le, EH1_Lh, EH1_solarP, EH1_windP, EH1_Edr, EH1_Hdr] = EH1.getResult;
+            [result_Ele(:,2), result_CHP_G(:,2), result_Boiler_G(:,2), result_ES_discharge(:,2), result_ES_charge(:,2), result_HS_discharge(:,2), result_HS_charge(:,2), result_ES_SOC(:,2), result_HS_SOC(:,2), EH2_Le, EH2_Lh, EH2_solarP, EH2_windP, EH2_Edr, EH2_Hdr] = EH2.getResult;
+            [result_Ele(:,3), result_CHP_G(:,3), result_Boiler_G(:,3), result_ES_discharge(:,3), result_ES_charge(:,3), result_HS_discharge(:,3), result_HS_charge(:,3), result_ES_SOC(:,3), result_HS_SOC(:,3), EH3_Le, EH3_Lh, EH3_solarP, EH3_windP, EH3_Edr, EH3_Hdr] = EH3.getResult;
         end
 
 
