@@ -32,10 +32,10 @@ for IES_no = 1 : 3
     eval(['EH_Lh = EH_Lh_base + EH',num2str(IES_no),'_Hdr;']);
     subplot(3 , 2 , (IES_no - 1) * 2 + 1 )
     hold on;
-    stairs(t,EH_Le_base/1000,'Color','b','LineStyle','-','LineWidth',w) %plot
-    stairs(t,EH_Le/1000,'Color','b','LineStyle','-.','LineWidth',w) %plot
-    stairs(t,EH_Lh_base/1000,'Color','r','LineStyle','-','LineWidth',w)
-    stairs(t,EH_Lh/1000,'Color','r','LineStyle','-.','LineWidth',w)
+    stairs(t,EH_Le_base/1000,'Color','b','LineStyle','-.','LineWidth',w) %plot
+    stairs(t,EH_Le/1000,'Color','b','LineStyle','-','LineWidth',w) %plot
+    stairs(t,EH_Lh_base/1000,'Color','r','LineStyle','-.','LineWidth',w)
+    stairs(t,EH_Lh/1000,'Color','r','LineStyle','-','LineWidth',w)
     xlim([0,24*period])
     set(gca,'XTick',0:(24*period/4):24*period, 'XTickLabel',{'0:00','6:00','12:00','18:00','24:00'})
     ylabel('负荷需求(MW)')
@@ -134,8 +134,9 @@ for IES_no = 1 : 3
 end
 
 %检查馈线的平衡性，并检查馈线的功率是否越限
-result_balance_grid = gridClearDemand + sum(result_Ele,2); %2表示按列相加
-
+if isCentral == 0
+    result_balance_grid = gridClearDemand + sum(result_Ele,2); %2表示按列相加
+end
 %计算总的购电功率和总的购气功率(查看是否越限)
 % totalE = result_Ele(:,1) + result_Ele(:,2) + result_Ele(:,3);
 % totalGas = EH1_G_CHP + EH1_G_Boiler + EH2_G_CHP + EH2_G_Boiler
@@ -153,15 +154,16 @@ disp(['IES3总成本为 ',num2str(totalCost3),' 元'])
 disp(['总成本为 ',num2str(totalCost1 + totalCost2 + totalCost3),' 元'])
 
 %按出清价格 计算成本
-totalCost1 = ( sum(result_Ele(:,1) .* priceArray) + sum(result_Gas(:,1) .* gasPrice1) ) / period; %priceArray保留的是日内出清价格
-totalCost2 = ( sum(result_Ele(:,2) .* priceArray) + sum(result_Gas(:,2) .* gasPrice1) ) / period;
-totalCost3 = ( sum(result_Ele(:,3) .* priceArray) + sum(result_Gas(:,3) .* gasPrice3) ) / period;
+if isCentral == 0
+    totalCost1 = ( sum(result_Ele(:,1) .* priceArray) + sum(result_Gas(:,1) .* gasPrice1) ) / period; %priceArray保留的是日内出清价格
+    totalCost2 = ( sum(result_Ele(:,2) .* priceArray) + sum(result_Gas(:,2) .* gasPrice1) ) / period;
+    totalCost3 = ( sum(result_Ele(:,3) .* priceArray) + sum(result_Gas(:,3) .* gasPrice3) ) / period;
 
-disp(['IES1总成本2为 ',num2str(totalCost1),' 元'])
-disp(['IES2总成本2为 ',num2str(totalCost2),' 元'])
-disp(['IES3总成本2为 ',num2str(totalCost3),' 元'])
-disp(['总成本2为 ',num2str(totalCost1 + totalCost2 + totalCost3),' 元'])
-
+    disp(['IES1总成本2为 ',num2str(totalCost1),' 元'])
+    disp(['IES2总成本2为 ',num2str(totalCost2),' 元'])
+    disp(['IES3总成本2为 ',num2str(totalCost3),' 元'])
+    disp(['总成本2为 ',num2str(totalCost1 + totalCost2 + totalCost3),' 元'])
+end
 
 %计算弃风光率
 waste_power1 = sum(result_balance_P(:,1)) / sum(EH1_solarP + EH1_windP) * 100; % 分子分母的period抵消了
@@ -219,10 +221,13 @@ c2 = ColorHex('41DB00');
 c3 = ColorHex('A63C00');
 
 %--------------------阻塞管理---------------------
-
-c4_clearingPrice = priceArray;
-c4_gridClearDemand = gridClearDemand';
-
+if isCentral == 0
+    c4_clearingPrice = priceArray;
+    c4_gridClearDemand = gridClearDemand';
+else
+    c4_clearingPrice = elePrice;
+    c4_gridClearDemand = - sum(result_Ele , 2);
+end
 figure
 hold on
 [AX,H1,H2] = plotyy(t1, -c4_gridClearDemand/1000, t1, [c4_clearingPrice, elePrice], 'bar', 'plot');
@@ -283,8 +288,8 @@ for IES_no = 1 : IESNUMBER
     H3(2).FaceColor = H3(2).EdgeColor;
     
     set(H2(1),'Color',firebrick, 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
-    set(H2(2),'Color','black', 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
-    set(H2(3),'Color','blue', 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
+    set(H2(2),'Color','blue', 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
+    set(H2(3),'Color','black', 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
     
     set(get(AX(1),'Ylabel'),'String','电功率(MW)')
     set(get(AX(2),'Ylabel'),'String','电功率(MW)')
@@ -316,13 +321,13 @@ for IES_no = 1 : IESNUMBER
     [AX,H1,H2] = plotyy(t1, bar_positive, t1,[Hgen, Hload_base, Hload] ,stackedbar,prettyline);
     H1(1).EdgeColor = yellowgreen;
     H1(1).FaceColor = H1(1).EdgeColor;
-    H1(2).EdgeColor = maroon;
+    H1(2).EdgeColor = gold;
     H1(2).FaceColor = H1(2).EdgeColor;
     H1(3).EdgeColor = indianred;
     H1(3).FaceColor = H1(3).EdgeColor;
     set(H2(1),'Color',firebrick, 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
-    set(H2(2),'Color','black', 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
-    set(H2(3),'Color','blue', 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
+    set(H2(2),'Color','blue', 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
+    set(H2(3),'Color','black', 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
     H3 = bar(bar_negtive,'stacked');
     H3(1).EdgeColor = H1(3).EdgeColor;
     H3(1).FaceColor = H3(1).EdgeColor;

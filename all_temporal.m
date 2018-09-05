@@ -1,5 +1,6 @@
         %全时段的优化问题，与single_temporal比较
         %次梯度法求解
+        time = 1;
         global elePrice period
         iterativeStep = 1e-6 ;
         stepArray= iterativeStep * ones(24 * period - time + 1, 1); %0.00001 0.0001  

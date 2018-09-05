@@ -395,6 +395,8 @@ classdef EH_local_170828_v3 < handle
                 ub(time*6+i, 1) = obj.HS_Hmax;
                 ub(time*7+i, 1) = obj.Le_drP_rate;
                 ub(time*8+i, 1) = obj.Lh_drP_rate;
+%                 ub(time*7+i, 1) = 1e6;
+%                 ub(time*8+i, 1) = 1e6;
             end
             for i = 1 : time
                 lb(i, 1) = obj.Ele_min;
