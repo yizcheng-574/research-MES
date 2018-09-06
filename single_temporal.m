@@ -1,7 +1,7 @@
 %单时段的优化问题，与all_temporal比较
 global minMarketPrice maxMarketPrice
 ee = 1e-2; %0.0001 0.0003
-iterativeStep = 1e-6; %0.00001 0.0001
+iterativeStep = 5e-6; %0.00001 0.0001
 iterationTimes = zeros(24*period, 2); %记录迭代次数
 maxIteration = 3000; %最大迭代次数
 if isGrad == 1%次梯度法求解
@@ -9,6 +9,37 @@ if isGrad == 1%次梯度法求解
     gridClearDemand = zeros(24*period,1);
     
     for pt =  1 : 24*period
+        
+         % 最低价格，一般都是需求大于供给
+        priceArray(pt) = minMarketPrice;
+        [x,~,~,~,~] = EH1.handlePrice(priceArray, gasPrice1, pt);
+        clearDemand_minPrice_EH1 = x(1);
+        [x,~,~,~,~] = EH2.handlePrice(priceArray, gasPrice1, pt);
+        clearDemand_minPrice_EH2 = x(1);
+        [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice3, pt);
+        clearDemand_minPrice_EH3 = x(1);
+        clearDemand_minPrice_grid = Grid1.handlePrice(priceArray(pt), pt);
+        clearDemand_minPrice = [clearDemand_minPrice_grid; clearDemand_minPrice_EH1; clearDemand_minPrice_EH2; clearDemand_minPrice_EH3]; % 需求为正，供给为负
+        
+        % 最高价格，一般都是供给大于需求
+        priceArray(pt) = maxMarketPrice;
+        [x,~,~,~,~] = EH1.handlePrice(priceArray, gasPrice1, pt);
+        clearDemand_maxPrice_EH1 = x(1);
+        [x,~,~,~,~] = EH2.handlePrice(priceArray, gasPrice1, pt);
+        clearDemand_maxPrice_EH2 = x(1);
+        [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice3, pt);
+        clearDemand_maxPrice_EH3 = x(1);
+        clearDemand_maxPrice_grid = Grid1.handlePrice(priceArray(pt), pt);
+        clearDemand_maxPrice = [clearDemand_maxPrice_grid; clearDemand_maxPrice_EH1; clearDemand_maxPrice_EH2; clearDemand_maxPrice_EH3]; % 需求为正，供给为负
+        
+        iterationNumber = 2;
+        if sum(clearDemand_minPrice) * sum(clearDemand_maxPrice) <= 0 % 说明出清点在这个区间内，有两个问题，一是等于零是否直接结束，二是如果出清点不唯一怎么办
+            % 市场出清得到出清价格，并更新预测电价序列
+            [priceArray(pt), clearDemand] = iterativeClear(minMarketPrice, maxMarketPrice, clearDemand_minPrice, clearDemand_maxPrice, ee, priceArray, gasPrice1, gasPrice3, pt);
+        else
+            disp('Clearing point is not in the given interval.')
+        end
+        
         number = 1;
         lamda_old = -10;
         lamda_new = 0.0; %取初始值：对预测电价没有偏差

@@ -16,7 +16,7 @@
         priceArray_record = zeros( 24 * period , 3);%第一列为日前预测，第二列为实际
         priceArray_record(:,1) = elePrice;
         %单时段求解
-        isGrad = 0;%1-次梯度法 0-二分法
+        isGrad = 1;%1-次梯度法 0-二分法
         single_temporal;
         
         %日内优化
