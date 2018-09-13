@@ -14,9 +14,9 @@
 %         time = 1; 
 %         all_temporal;
         priceArray_record = zeros( 24 * period , 3);%第一列为日前预测，第二列为实际
-        priceArray_record(:,1) = elePrice;
         %单时段求解
         isGrad = 1;%1-次梯度法 0-二分法
+        isDA = 1;
         single_temporal;
         
         %日内优化
@@ -25,10 +25,9 @@
 %             all_temporal;
 %         end
         %单时段滚动求解
-        priceArray_record(:,2) = priceArray;
-        single_temporal;
-        priceArray_record(:,3) = priceArray;
         
+        isDA = 0;
+        single_temporal;        
 %         all_temporal;
         isCentral = 0;
         main_handle_171013_v2

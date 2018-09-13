@@ -4,12 +4,20 @@ ee = 1e-2; %0.0001 0.0003
 iterativeStep = 5e-6; %0.00001 0.0001
 iterationTimes = zeros(24*period, 2); %记录迭代次数
 maxIteration = 3000; %最大迭代次数
+gridClearDemand = zeros(24*period,1);
+if isDA 
+   EH1.predict(0);
+   EH2.predict(0);
+   EH3.predict(0);
+   priceArray_record(:,1) = elePrice;
+end
 if isGrad == 1%次梯度法求解
-    
-    gridClearDemand = zeros(24*period,1);
-    
     for pt =  1 : 24*period
-        
+        if isDA ~= 0
+            EH1.predict(pt);
+            EH2.predict(pt);
+            EH3.predict(pt);
+        end
          % 最低价格，一般都是需求大于供给
         priceArray(pt) = minMarketPrice;
         [x,~,~,~,~] = EH1.handlePrice(priceArray, gasPrice1, pt);
@@ -190,3 +198,8 @@ end
 [result_Ele(:,1), result_CHP_G(:,1), result_Boiler_G(:,1), result_ES_discharge(:,1), result_ES_charge(:,1), result_HS_discharge(:,1), result_HS_charge(:,1), result_ES_SOC(:,1), result_HS_SOC(:,1), EH1_Le, EH1_Lh, EH1_solarP, EH1_windP, EH1_Edr, EH1_Hdr] = EH1.getResult;
 [result_Ele(:,2), result_CHP_G(:,2), result_Boiler_G(:,2), result_ES_discharge(:,2), result_ES_charge(:,2), result_HS_discharge(:,2), result_HS_charge(:,2), result_ES_SOC(:,2), result_HS_SOC(:,2), EH2_Le, EH2_Lh, EH2_solarP, EH2_windP, EH2_Edr, EH2_Hdr] = EH2.getResult;
 [result_Ele(:,3), result_CHP_G(:,3), result_Boiler_G(:,3), result_ES_discharge(:,3), result_ES_charge(:,3), result_HS_discharge(:,3), result_HS_charge(:,3), result_ES_SOC(:,3), result_HS_SOC(:,3), EH3_Le, EH3_Lh, EH3_solarP, EH3_windP, EH3_Edr, EH3_Hdr] = EH3.getResult;
+if isDA 
+    priceArray_record(:,2) = priceArray;
+else
+    priceArray_record(:,3) = priceArray;
+end

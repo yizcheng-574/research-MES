@@ -12,12 +12,16 @@
 classdef EH_local_170828_v3 < handle
     properties %可以设初始值
         %负荷与可再生能源
-        Le;
-        Lh;
-        solarP;
+        Le_real;
+        Le_pre;
+        Lh_real;
+        Lh_pre;
+        solarP_real;
+        solarP_pre;
         solarP_rate;
-        windP;
+        windP_real;
         windP_rate;
+        windP_pre;
         dev_L; %百分数
         dev_PV;
         dev_WT;
@@ -96,11 +100,11 @@ classdef EH_local_170828_v3 < handle
             % Gas_min = 0;
             
             %负荷与可再生能源
-            obj.Le = Le_base; %base是日前初步的预测曲线
-            obj.Lh = Lh_base;
-            obj.solarP = solar_base;
+            obj.Le_real = Le_base; %base是日前初步的预测曲线
+            obj.Lh_real = Lh_base;
+            obj.solarP_real = solar_base;
             obj.solarP_rate = solar_rate;
-            obj.windP = wind_base;
+            obj.windP_real = wind_base;
             obj.windP_rate = wind_rate;
             obj.dev_L = dev_load; %百分数
             obj.dev_PV = dev_solar;
@@ -162,7 +166,7 @@ classdef EH_local_170828_v3 < handle
         
         % 可再生能源与负荷的预测业务，一天预测25次，日前一次，日内每小时一次
         function predict(obj, t_current) % 第几小时的预测，time=0是日前，1-24是日内
-            %             global period
+            global period
             if t_current ~= 0
                 %rand 生成均匀分布的伪随机数 分布在（0~1）之间
                 %randn 生成标准正态分布的伪随机数 （均值为0，方差为1）
@@ -176,55 +180,43 @@ classdef EH_local_170828_v3 < handle
                 %                 obj.Le = obj.Le + Le_error; %更新
                 %                 obj.Lh = obj.Lh + Lh_error;
                 %改为只计当前时刻的预测误差，否则累计的误差过大；频繁重复预测也不科学
-                Le_error = randn() * obj.Le(t_current) * obj.dev_L; %预测误差
-                Lh_error = randn() * obj.Lh(t_current) * obj.dev_L;
-                obj.Le(t_current) = obj.Le(t_current) + Le_error; %更新
-                obj.Lh(t_current) = obj.Lh(t_current) + Lh_error;
-                
-                %风、光
-                %有几点和负荷不一样
-                %一是：如果光是零，那么一定是零，没有预测误差
-                %二是：风、光接近零的时候，不要随机变为负数
-                %                 solarP_error = zeros(24*period,1);
-                %                 windP_error = zeros(24*period,1);
-                %                 solarP_error(t_current:24*period) = randn([(24*period-t_current+1),1]) .* obj.solarP(t_current:24*period) * obj.dev_RES; %预测误差
-                %                 windP_error(t_current:24*period) = randn([(24*period-t_current+1),1]) .* obj.windP(t_current:24*period) * obj.dev_RES;
-                %                 %修正
-                %                 for i = t_current : 24*period
-                %                     if obj.solarP(i) == 0
-                %                         solarP_error(i) = 0;
-                %                     end
-                %                     if obj.solarP(i) + solarP_error(i) < 0
-                %                         solarP_error(i) = - obj.solarP(i);
-                %                     end
-                %                     if obj.windP(i) == 0
-                %                         windP_error(i) = 0;
-                %                     end
-                %                     if obj.windP(i) + windP_error(i) < 0
-                %                         windP_error(i) = - obj.windP(i);
-                %                     end
-                %                 end
-                %                 obj.solarP = obj.solarP + solarP_error; %更新
-                %                 obj.windP = obj.windP + windP_error;
-                solarP_error = randn() * obj.solarP(t_current) * obj.dev_PV; %预测误差，solarP(t_current)=0的时候自然为零
-                windP_error = randn() * obj.windP(t_current) * obj.dev_WT; %预测误差
-                
-                obj.solarP(t_current) = obj.solarP(t_current) + solarP_error; %更新
-                if obj.solarP(t_current) < 0
-                    obj.solarP(t_current) = 0;
-                elseif obj.solarP(t_current) > obj.solarP_rate
-                    obj.solarP(t_current) = obj.solarP_rate;
-                end
-                
-                obj.windP(t_current) = obj.windP(t_current) + windP_error;
-                if obj.windP(t_current) < 0
-                    obj.windP(t_current) = 0;
-                elseif obj.windP(t_current) > obj.windP_rate
-                    obj.windP(t_current) = obj.windP_rate;
-                end
+                for pt = t_current: 24 * period
+                    if pt == t_current
+                        dev_l = 0.03;
+                        dev_res = 0.05;
+                    else
+                        dev_l = 0.08;
+                        dev_res = 0.1;
+                    end
+                    Le_error = randn() * obj.Le_real(pt) * dev_l; %预测误差
+                    Lh_error = randn() * obj.Lh_real(pt) * dev_l;
+                    obj.Le_pre(pt) = obj.Le_real(pt) + Le_error; %更新
+                    obj.Lh_pre(pt) = obj.Lh_real(pt) + Lh_error;
+                    solarP_error = randn() * obj.solarP_real(pt) * dev_res; %预测误差，solarP(t_current)=0的时候自然为零
+                    windP_error = randn() * obj.windP_real(pt) * dev_res; %预测误差             
+                    obj.solarP_pre(pt) = obj.solarP_real(pt) + solarP_error; %更新  
+                    obj.windP_pre(pt) = obj.windP_real(pt) + windP_error;
+                end                
             else
-                %日前预测值就是base值
+                for pt = 1: 24 * period
+                    dev_l = 0.2;
+                    dev_res = 0.3;                    
+                    Le_error = randn() * obj.Le_real(pt) * dev_l; %预测误差
+                    Lh_error = randn() * obj.Lh_real(pt) * dev_l;
+                    obj.Le_pre(pt) = obj.Le_real(pt) + Le_error; %更新
+                    obj.Lh_pre(pt) = obj.Lh_real(pt) + Lh_error;
+                    solarP_error = randn() * obj.solarP_real(pt) * dev_res; %预测误差，solarP(t_current)=0的时候自然为零
+                    windP_error = randn() * obj.windP_real(pt) * dev_res; %预测误差             
+                    obj.solarP_pre(pt) = obj.solarP_real(pt) + solarP_error; %更新  
+                    obj.windP_pre(pt) = obj.windP_real(pt) + windP_error;
+                end                    
             end
+            obj.Le_pre(obj.Le_pre < 0) = 0;
+            obj.Lh_pre(obj.Lh_pre < 0) = 0;
+            obj.solarP_pre(obj.solarP_pre < 0) = 0;
+            obj.solarP_pre(obj.solarP_pre > obj.solarP_rate) = obj.solarP_rate;
+            obj.windP_pre(obj.windP_pre < 0) = 0;
+            obj.windP_pre(obj.windP_pre > obj.windP_rate) = obj.windP_rate;
         end
         
         
@@ -338,10 +330,10 @@ classdef EH_local_170828_v3 < handle
             ES_SOC = obj.ES_SOC;
             HS_SOC = obj.HS_SOC;
             % 同时输出偏移后的负荷与可再生能源
-            Le = obj.Le;
-            Lh = obj.Lh;
-            solarP = obj.solarP;
-            windP = obj.windP;
+            Le = obj.Le_real;
+            Lh = obj.Lh_real;
+            solarP = obj.solarP_real;
+            windP = obj.windP_real;
             %新增负荷水平
             Edr= obj.result_E_dr;
             Hdr= obj.result_H_dr;
@@ -352,8 +344,8 @@ classdef EH_local_170828_v3 < handle
         % 测试优化结果
         function [result_balance_P, result_balance_H, result_check_ES, result_check_HS] = testResult(obj)
             %电、热功率平衡性测试，降低要求至大于零
-            result_balance_P = obj.result_Ele + obj.CHP_GE_eff.*obj.result_CHP_G + obj.result_ES_discharge - obj.result_ES_charge - obj.Le + obj.windP + obj.solarP -obj.result_E_dr;
-            result_balance_H = obj.CHP_GH_eff.*obj.result_CHP_G + obj.Boiler_eff.*obj.result_Boiler_G + obj.result_HS_discharge - obj.result_HS_charge - obj.Lh-obj.result_H_dr;
+            result_balance_P = obj.result_Ele + obj.CHP_GE_eff.*obj.result_CHP_G + obj.result_ES_discharge - obj.result_ES_charge - obj.Le_pre + obj.windP_pre + obj.solarP_pre -obj.result_E_dr;
+            result_balance_H = obj.CHP_GH_eff.*obj.result_CHP_G + obj.Boiler_eff.*obj.result_Boiler_G + obj.result_HS_discharge - obj.result_HS_charge - obj.Lh_pre-obj.result_H_dr;
             %充、放功率至少有一个是零
             result_check_ES = obj.result_ES_discharge .* obj.result_ES_charge;
             result_check_HS = obj.result_HS_discharge .* obj.result_HS_charge; %有一点小问题，因为热过于充裕
@@ -421,8 +413,8 @@ classdef EH_local_170828_v3 < handle
             Aeq_Hbus = zeros(time, var);
             %beq_Ebus = - obj.Le;
             %beq_Hbus = - obj.Lh;
-            beq_Ebus = - obj.Le(t_current : 24*period) + obj.windP(t_current : 24*period) + obj.solarP(t_current : 24*period); %Le的size不变，但是取部分值
-            beq_Hbus = - obj.Lh(t_current : 24*period); %Lh的size不变，但是取部分值
+            beq_Ebus = - obj.Le_pre(t_current : 24*period) + obj.windP_pre(t_current : 24*period) + obj.solarP_pre(t_current : 24*period); %Le的size不变，但是取部分值
+            beq_Hbus = - obj.Lh_pre(t_current : 24*period); %Lh的size不变，但是取部分值
             for i=1:time
                 Aeq_Ebus(i,i) = - obj.Ele_eff; %线损率
                 Aeq_Ebus(i,time+i) = - obj.CHP_GE_eff;
@@ -518,7 +510,7 @@ classdef EH_local_170828_v3 < handle
             Aeq=[Aeq_Edr; Aeq_Hdr];
             beq=[beq_Edr; beq_Hdr];
             A=[Aeq_Ebus; Aeq_Hbus;   Aeq_ES; Aeq_HS;    A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
-            b=[beq_Ebus; beq_Hbus;   beq_ES; beq_HS;    b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
+            b=[beq_Ebus'; beq_Hbus';   beq_ES; beq_HS;    b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
             
             %             %fmincon需要列出一个初始可行解
             %             x0 = zeros(var,1);
