@@ -154,16 +154,16 @@ disp(['IES3总成本为 ',num2str(totalCost3),' 元'])
 disp(['总成本为 ',num2str(totalCost1 + totalCost2 + totalCost3),' 元'])
 
 %按出清价格 计算成本
-if isCentral == 0
-    totalCost1 = ( sum(result_Ele(:,1) .* priceArray) + sum(result_Gas(:,1) .* gasPrice1) ) / period; %priceArray保留的是日内出清价格
-    totalCost2 = ( sum(result_Ele(:,2) .* priceArray) + sum(result_Gas(:,2) .* gasPrice1) ) / period;
-    totalCost3 = ( sum(result_Ele(:,3) .* priceArray) + sum(result_Gas(:,3) .* gasPrice3) ) / period;
-
-    disp(['IES1总成本2为 ',num2str(totalCost1),' 元'])
-    disp(['IES2总成本2为 ',num2str(totalCost2),' 元'])
-    disp(['IES3总成本2为 ',num2str(totalCost3),' 元'])
-    disp(['总成本2为 ',num2str(totalCost1 + totalCost2 + totalCost3),' 元'])
-end
+% if isCentral == 0
+%     totalCost1 = ( sum(result_Ele(:,1) .* priceArray) + sum(result_Gas(:,1) .* gasPrice1) ) / period; %priceArray保留的是日内出清价格
+%     totalCost2 = ( sum(result_Ele(:,2) .* priceArray) + sum(result_Gas(:,2) .* gasPrice1) ) / period;
+%     totalCost3 = ( sum(result_Ele(:,3) .* priceArray) + sum(result_Gas(:,3) .* gasPrice3) ) / period;
+% 
+%     disp(['IES1总成本2为 ',num2str(totalCost1),' 元'])
+%     disp(['IES2总成本2为 ',num2str(totalCost2),' 元'])
+%     disp(['IES3总成本2为 ',num2str(totalCost3),' 元'])
+%     disp(['总成本2为 ',num2str(totalCost1 + totalCost2 + totalCost3),' 元'])
+% end
 
 %计算弃风光率
 waste_power1 = sum(result_balance_P(:,1)) / sum(EH1_solarP + EH1_windP) * 100; % 分子分母的period抵消了
