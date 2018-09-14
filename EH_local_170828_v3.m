@@ -536,6 +536,168 @@ classdef EH_local_170828_v3 < handle
             
         end
         
+        function [f, ub, lb, Aeq, beq, A, b, A_eleLimit_total] = OptMatrix(obj, Gprice, t_current)
+            
+            global period elePrice
+            time = 24 * period - t_current + 1;
+            var = time * 9; %总变量数
+
+            %求一次项系数f 是个列向量
+            f = zeros(var, 1);
+            for i = 1 : time
+                f(i, 1) = elePrice(t_current + i - 1); %Eprice的size不变，但是取部分值
+                f(time+i, 1) = Gprice;
+                f(time*2+i, 1) = Gprice;
+            end
+            
+            %变量上下限
+            ub = zeros(var, 1);
+            lb = zeros(var, 1);
+            for i = 1 : time
+                ub(i, 1) = obj.Ele_max;
+                ub(time+i, 1) = obj.CHP_G_max;
+                ub(time*2+i, 1) = obj.Boiler_G_max;
+                ub(time*3+i, 1) = obj.ES_Pmax;
+                ub(time*4+i, 1) = obj.ES_Pmax;
+                ub(time*5+i, 1) = obj.HS_Hmax;
+                ub(time*6+i, 1) = obj.HS_Hmax;
+                ub(time*7+i, 1) = obj.Le_drP_rate;
+                ub(time*8+i, 1) = obj.Lh_drP_rate;
+%                 ub(time*7+i, 1) = Ele_max;
+%                 ub(time*8+i, 1) = 1e4;
+            end
+            for i = 1 : time
+                lb(i, 1) = obj.Ele_min;
+                lb(time+i, 1) = obj.CHP_G_min;
+
+            end
+            
+            %等式约束包括：电、热平衡约束（供大于求，改为不等式）；电、热储能平衡性约束（改为不等式约束？）
+            %电、热平衡约束
+            Aeq_Ebus = zeros(time, var);
+            Aeq_Hbus = zeros(time, var);
+            beq_Ebus = - obj.Le_pre(t_current : 24*period) + obj.windP_pre(t_current : 24*period) + obj.solarP_pre(t_current : 24*period);
+            beq_Hbus = - obj.Lh_pre(t_current : 24*period); 
+            for i=1:time
+                Aeq_Ebus(i,i) = - obj.Ele_eff; %线损率
+                Aeq_Ebus(i,time+i) = - obj.CHP_GE_eff;
+                Aeq_Ebus(i,time*3+i) = - 1; %放电
+                Aeq_Ebus(i,time*4+i) = 1; %充电
+                Aeq_Ebus(i,time*7+i) = 1;
+            end
+            for i=1:time
+                Aeq_Hbus(i,time+i) = - obj.CHP_GH_eff;
+                Aeq_Hbus(i,time*2+i) = - obj.Boiler_eff;
+                Aeq_Hbus(i,time*5+i) = - 1; %放热
+                Aeq_Hbus(i,time*6+i) = 1; %充热
+                Aeq_Hbus(i,time*8+i) = 1;
+            end
+            
+            %可平移负荷约束
+            Aeq_Edr = zeros(1, var);
+            beq_Edr = obj.Le_drP_total - sum(obj.result_E_dr(1:t_current-1));
+            for i=1:time
+                Aeq_Edr(1, time*7+i) = 1;
+            end
+            
+            Aeq_Hdr = zeros(1, var);
+            beq_Hdr = obj.Lh_drP_total - sum(obj.result_H_dr(1:t_current-1));
+            for i=1:time
+                Aeq_Hdr(1, time*8+i) = 1;
+            end
+            %电、热储能平衡性约束
+            Aeq_ES = zeros(1, var);
+            beq_ES = - (obj.ES_targetSOC - obj.ES_SOC(t_current)) * obj.ES_totalC;
+            for i=1:time
+                Aeq_ES(1, time*3+i) = 1/obj.ES_eff; %放电
+                Aeq_ES(1, time*4+i) = - 1*obj.ES_eff; %充电
+            end
+            Aeq_HS = zeros(1, var);
+            beq_HS = - (obj.HS_targetSOC - obj.HS_SOC(t_current)) * obj.HS_totalC;
+            for i=1:time
+                Aeq_HS(1, time*5+i) = 1/obj.HS_eff; %放热
+                Aeq_HS(1, time*6+i) = - 1*obj.HS_eff; %充热
+            end
+            
+            
+            
+            %不等式约束包括：SOC约束；购气量和的约束；（爬坡率约束）
+            %SOC约束 A1是上限，A2是下限
+            A1_Esoc = zeros(time, var);
+            A2_Esoc = zeros(time, var);
+            b1_Esoc = ones(time,1) * (obj.ES_maxSOC - obj.ES_SOC(t_current)) * obj.ES_totalC;
+            b2_Esoc = ones(time,1) * (obj.ES_SOC(t_current) - obj.ES_minSOC) * obj.ES_totalC;
+            for i=1:time
+                for j=1 : i
+                    A1_Esoc(i, time*3+j) = -1/obj.ES_eff; %放电
+                    A1_Esoc(i, time*4+j) = 1*obj.ES_eff; %充电
+                end
+            end
+            for i=1:time
+                for j=1 : i
+                    A2_Esoc(i, time*3+j) = 1/obj.ES_eff; %放电
+                    A2_Esoc(i, time*4+j) = -1*obj.ES_eff; %充电
+                end
+            end
+            
+            A1_Hsoc = zeros(time, var);
+            A2_Hsoc = zeros(time, var);
+            b1_Hsoc = ones(time,1) * (obj.HS_maxSOC - obj.HS_SOC(t_current)) * obj.HS_totalC;
+            b2_Hsoc = ones(time,1) * (obj.HS_SOC(t_current) - obj.HS_minSOC) * obj.HS_totalC;
+            for i=1:time
+                for j=1 : i
+                    A1_Hsoc(i, time*5+j) = -1/obj.HS_eff; %放热
+                    A1_Hsoc(i, time*6+j) = 1*obj.HS_eff; %充热
+                end
+            end
+            for i=1:time
+                for j=1 : i
+                    A2_Hsoc(i, time*5+j) = 1/obj.HS_eff; %放热
+                    A2_Hsoc(i, time*6+j) = -1*obj.HS_eff; %充热
+                end
+            end
+            
+            %购气量和的约束
+            A_Gmax = zeros(time, var);
+            b_Gmax = ones(time,1) .* obj.Gas_max;
+            for i=1:time
+                A_Gmax(i, time+i) = 1;
+                A_Gmax(i, time*2+i) = 1;
+            end
+           
+            %归纳所有线性约束
+            %等式约束包括：电、热平衡约束（改为不等式），电、热储能平衡性约束（改为不等式）
+            %不等式约束包括：SOC约束，购气量和的约束，（爬坡率约束）
+            Aeq=[Aeq_Edr; Aeq_Hdr];
+            beq=[beq_Edr; beq_Hdr];
+            A=[Aeq_Ebus; Aeq_Hbus;   Aeq_ES; Aeq_HS;    A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
+            b=[beq_Ebus'; beq_Hbus';   beq_ES; beq_HS;    b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
+            
+           % 需要额外增加一个购电量的上、下限约束
+            A_eleLimit_total = zeros(time, var);
+            for i=1:time
+                A_eleLimit_total(i, i) = 1;
+            end 
+        end
+        
+         function  update_central(obj, x, t_current, IES_no) %这里的x随着t_current会越来越少
+            global period 
+            time = 24 * period - t_current + 1; %总时间段
+            var = time * 9;
+            obj.result_Ele(t_current) = x(1 + (IES_no - 1)* var);
+            obj.result_CHP_G(t_current) = x(time + 1 + (IES_no - 1)* var);
+            obj.result_Boiler_G(t_current) = x(time * 2 + 1 + (IES_no - 1)* var);
+            obj.result_ES_discharge(t_current) = x(time * 3 + 1 + (IES_no - 1)* var);
+            obj.result_ES_charge(t_current) = x(time * 4 + 1 + (IES_no - 1)* var );
+            obj.result_HS_discharge(t_current) = x(time * 5 + 1 + (IES_no - 1)* var);
+            obj.result_HS_charge(t_current) = x(time * 6 + 1 + (IES_no - 1)* var);
+            obj.result_E_dr(t_current)=  x(time * 7 + 1 + (IES_no - 1)* var );
+            obj.result_H_dr(t_current) = x(time * 8 + 1 + (IES_no - 1)* var);
+            %更新储能状态
+            obj.ES_SOC(t_current+1) = obj.ES_SOC(t_current) - obj.result_ES_discharge(t_current) / obj.ES_eff / obj.ES_totalC + obj.result_ES_charge(t_current) * obj.ES_eff / obj.ES_totalC;
+            obj.HS_SOC(t_current+1) = obj.HS_SOC(t_current) - obj.result_HS_discharge(t_current) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(t_current) * obj.HS_eff / obj.HS_totalC;
+        end
+        
     end
     
 end
