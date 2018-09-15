@@ -24,7 +24,7 @@ if isGrad == 1%次梯度法求解
         clearDemand_minPrice_EH1 = x(1);
         [x,~,~,~,~] = EH2.handlePrice(priceArray, gasPrice1, pt);
         clearDemand_minPrice_EH2 = x(1);
-        [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice3, pt);
+        [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice1, pt);
         clearDemand_minPrice_EH3 = x(1);
         clearDemand_minPrice_grid = Grid1.handlePrice(priceArray(pt), pt);
         clearDemand_minPrice = [clearDemand_minPrice_grid; clearDemand_minPrice_EH1; clearDemand_minPrice_EH2; clearDemand_minPrice_EH3]; % 需求为正，供给为负
@@ -35,7 +35,7 @@ if isGrad == 1%次梯度法求解
         clearDemand_maxPrice_EH1 = x(1);
         [x,~,~,~,~] = EH2.handlePrice(priceArray, gasPrice1, pt);
         clearDemand_maxPrice_EH2 = x(1);
-        [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice3, pt);
+        [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice1, pt);
         clearDemand_maxPrice_EH3 = x(1);
         clearDemand_maxPrice_grid = Grid1.handlePrice(priceArray(pt), pt);
         clearDemand_maxPrice = [clearDemand_maxPrice_grid; clearDemand_maxPrice_EH1; clearDemand_maxPrice_EH2; clearDemand_maxPrice_EH3]; % 需求为正，供给为负
@@ -67,9 +67,12 @@ if isGrad == 1%次梯度法求解
             % 后一个条件是因为即使lamda收敛后，供需也不平衡，所以需要取一正一负两个点，来求零点
             % && || 的前一个为否，则后一个就不计算了
             % 要求至少迭代两次（number=1，2）
-            
             if number > maxIteration
-                error('超出最大迭代次数');
+                if isDA
+                    break;
+                else
+                    error('超出最大迭代次数');
+                end
             end
             
             %当前价格下的出力
@@ -78,7 +81,7 @@ if isGrad == 1%次梯度法求解
             clearDemand_EH1_new = x(1);
             [x,~,~,~,~] = EH2.handlePrice(priceArray, gasPrice1, pt);
             clearDemand_EH2_new = x(1);
-            [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice3, pt);
+            [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice1, pt);
             clearDemand_EH3_new = x(1);
             
             % clearDemand_grid_new = Grid1.handlePrice(priceArray(pt), pt);
@@ -150,7 +153,7 @@ if isGrad == 1%次梯度法求解
         gridClearDemand(pt) = clearDemand(1);
         EH1.conditionHandlePrice_2(priceArray, gasPrice1, pt, clearDemand(2));
         EH2.conditionHandlePrice_2(priceArray, gasPrice1, pt, clearDemand(3));
-        EH3.conditionHandlePrice_2(priceArray, gasPrice3, pt, clearDemand(4));
+        EH3.conditionHandlePrice_2(priceArray, gasPrice1, pt, clearDemand(4));
         
     end
     
@@ -162,7 +165,7 @@ else    %二分法求解
         clearDemand_minPrice_EH1 = x(1);
         [x,~,~,~,~] = EH2.handlePrice(priceArray, gasPrice1, pt);
         clearDemand_minPrice_EH2 = x(1);
-        [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice3, pt);
+        [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice1, pt);
         clearDemand_minPrice_EH3 = x(1);
         clearDemand_minPrice_grid = Grid1.handlePrice(priceArray(pt), pt);
         clearDemand_minPrice = [clearDemand_minPrice_grid; clearDemand_minPrice_EH1; clearDemand_minPrice_EH2; clearDemand_minPrice_EH3]; % 需求为正，供给为负
@@ -173,7 +176,7 @@ else    %二分法求解
         clearDemand_maxPrice_EH1 = x(1);
         [x,~,~,~,~] = EH2.handlePrice(priceArray, gasPrice1, pt);
         clearDemand_maxPrice_EH2 = x(1);
-        [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice3, pt);
+        [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice1, pt);
         clearDemand_maxPrice_EH3 = x(1);
         clearDemand_maxPrice_grid = Grid1.handlePrice(priceArray(pt), pt);
         clearDemand_maxPrice = [clearDemand_maxPrice_grid; clearDemand_maxPrice_EH1; clearDemand_maxPrice_EH2; clearDemand_maxPrice_EH3]; % 需求为正，供给为负
@@ -191,7 +194,7 @@ else    %二分法求解
         gridClearDemand(pt) = clearDemand(1);
         EH1.conditionHandlePrice_2(priceArray, gasPrice1, pt, clearDemand(2));
         EH2.conditionHandlePrice_2(priceArray, gasPrice1, pt, clearDemand(3));
-        EH3.conditionHandlePrice_2(priceArray, gasPrice3, pt, clearDemand(4));
+        EH3.conditionHandlePrice_2(priceArray, gasPrice1, pt, clearDemand(4));
         
     end
 end
