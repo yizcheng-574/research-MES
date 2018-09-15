@@ -509,9 +509,11 @@ classdef EH_local_170828_v3 < handle
             %不等式约束包括：SOC约束，购气量和的约束，（爬坡率约束）
             Aeq=[Aeq_Edr; Aeq_Hdr];
             beq=[beq_Edr; beq_Hdr];
-            A=[Aeq_Ebus; Aeq_Hbus;   Aeq_ES; Aeq_HS;    A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
-            b=[beq_Ebus'; beq_Hbus';   beq_ES; beq_HS;    b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
-            
+%             A=[Aeq_Ebus; Aeq_Hbus;   Aeq_ES; Aeq_HS;    A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
+%             b=[beq_Ebus'; beq_Hbus';   beq_ES; beq_HS;    b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
+            A=[Aeq_Ebus; Aeq_Hbus;     A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
+            b=[beq_Ebus'; beq_Hbus';    b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
+              
             %             %fmincon需要列出一个初始可行解
             %             x0 = zeros(var,1);
             %             for i = 1 : time
