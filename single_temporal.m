@@ -1,7 +1,7 @@
 %单时段的优化问题，与all_temporal比较
 global minMarketPrice maxMarketPrice period
 ee = 1e-2; %0.0001 0.0003
-iterativeStep = 5e-6; %0.00001 0.0001
+iterativeStep = 1e-5; %0.00001 0.0001
 iterationTimes = zeros(24*period, 2); %记录迭代次数
 maxIteration = 3000; %最大迭代次数
 gridClearDemand = zeros(24*period,1);
@@ -13,7 +13,7 @@ if isDA
 end
 if isGrad == 1%次梯度法求解
     for pt =  1 : 24 * period
-        if isDA ~= 0
+        if isDA == 0
             EH1.predict(pt);
             EH2.predict(pt);
             EH3.predict(pt);

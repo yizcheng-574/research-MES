@@ -17,7 +17,7 @@ para_init;
         %单时段求解
         isGrad = 1;%1-次梯度法 0-二分法
         isDA = 1;
-        single_temporal;
+        all_temporal;
         
         %日内优化
         %全时段滚动求解
@@ -27,7 +27,6 @@ para_init;
         %单时段滚动求解
         
         isDA = 0;
-        single_temporal;        
-%         all_temporal;
+        single_temporal;
         isCentral = 0;
         main_handle_171013_v2

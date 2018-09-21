@@ -1,4 +1,4 @@
-% close all
+close all
 % 数据处理
 global period
 
@@ -37,6 +37,7 @@ for IES_no = 1 : 3
     stairs(t,EH_Lh_base/1000,'Color','r','LineStyle','-.','LineWidth',w)
     stairs(t,EH_Lh/1000,'Color','r','LineStyle','-','LineWidth',w)
     xlim([0,24*period])
+    ylim([0,max(max(EH_Le),max(EH_Lh))/1000]);
     set(gca,'XTick',0:(24*period/4):24*period, 'XTickLabel',{'0:00','6:00','12:00','18:00','24:00'})
     ylabel('负荷需求(MW)')
     legend('基本电负荷','总电负荷','基本热负荷','总热负荷','Location','northoutside','Orientation','horizontal')
@@ -54,7 +55,6 @@ for IES_no = 1 : 3
     % xlabel('time / h')
     % legend('PV','WT','Location','northoutside','Orientation','horizontal')
     ylabel('发电功率(MW)')
-    % xlabel('时间(h)')
     legend('光伏','风电','Location','northoutside','Orientation','horizontal')
 end
 
@@ -66,8 +66,6 @@ for IES_no = 1 : 3
     eval(['result_CHP_heat(:,IES_no) = result_CHP_G(:,IES_no) .* EH',num2str(IES_no),'.CHP_GH_eff; ']);
     eval(['result_Boiler_heat(:,IES_no) = result_Boiler_G(:,IES_no) .* EH',num2str(IES_no),'.Boiler_eff;']);
 end
-
-
 %--------------------------------------测试优化结果--------------------------------------
 ee = 1e-3;
 
@@ -77,66 +75,64 @@ result_ES_charge(result_ES_charge < ee) = 0;
 result_HS_discharge(result_HS_discharge < ee) = 0;
 result_HS_charge(result_HS_charge < ee) = 0;
 
-for IES_no = 1 : 3
-    %电、热功率平衡性测试，降低要求至大于零
-    eval(['result_balance_P(:,IES_no) = result_Ele_loss(:,IES_no) + result_CHP_power(:,IES_no) + result_ES_discharge(:,IES_no) - result_ES_charge(:,IES_no) - EH',num2str(IES_no),'_Le - EH',num2str(IES_no),'_Edr + EH',num2str(IES_no),'_windP + EH',num2str(IES_no),'_solarP;']);
-    eval(['result_balance_H(:,IES_no) = result_CHP_heat(:,IES_no) + result_Boiler_heat(:,IES_no) + result_HS_discharge(:,IES_no) - result_HS_charge(:,IES_no) - EH',num2str(IES_no),'_Lh - EH', num2str(IES_no),'_Hdr;']);
-    %充、放功率至少有一个是零
-    result_check_ES(:,IES_no) = result_ES_discharge(:,IES_no) .* result_ES_charge(:,IES_no);
-    result_check_HS(:,IES_no) = result_HS_discharge(:,IES_no) .* result_HS_charge(:,IES_no); %有一点小问题，因为热过于充裕
-    % 20180129 对充放电乘积约束的再思考
-    if max(result_check_ES(:,IES_no)) > 0
-        fprintf('EH%d电储能需要修正',IES_no);
-        for i=1:length(result_check_ES(:,IES_no))
-            if result_check_ES(i,IES_no)> 0
-                if result_balance_P(i,IES_no) < ee % 如果充放同时进行，而又没有多余的电，才算有问题
-                     fprintf('EH%d电储能结果有问题 !!! 时间是%d',IES_no,i);
-                else % 对充放同时的场景进行修正：SOC不变，充放电功率保留一个非零，且值有变化
-                    deltaSOC = result_ES_SOC(i+1,IES_no) - result_ES_SOC(i,IES_no);
-                    if deltaSOC > 0 % 表示充电
-                        eval(['result_ES_charge(i,IES_no) = deltaSOC * EH',num2str(IES_no),'.ES_totalC / EH',num2str(IES_no),'.ES_eff;']); % 乘以容量，除以效率
-                        result_ES_discharge(i,IES_no) = 0;
-                    else % 表示放电
-                        result_ES_charge(i,IES_no) = 0;
-                        eval(['result_ES_discharge(i,IES_no) = - deltaSOC * EH',num2str(IES_no),'.ES_totalC * EH',num2str(IES_no),'.ES_eff;']); % 乘以容量，乘以效率;
-                    end
-                end
-            end
-        end
-        % 完成修正后重新计算
-        eval(['result_balance_P(:,IES_no) = result_Ele_loss(:,IES_no) + result_CHP_power(:,IES_no) + result_ES_discharge(:,IES_no) - result_ES_charge(:,IES_no) - EH',num2str(IES_no),'_Le -EH', num2str(IES_no),'_Edr + EH',num2str(IES_no),'_windP + EH',num2str(IES_no),'_solarP;']);
-        result_check_ES(:,IES_no) = result_ES_discharge(:,IES_no) .* result_ES_charge(:,IES_no);
-    end
-    if max(result_check_HS(:,IES_no)) > 0
-        fprintf('EH%d热储能需要修正',IES_no);
-        for i=1:length(result_check_HS(:,IES_no))
-            if result_check_HS(i,IES_no) > 0
-                if result_balance_H(i,IES_no) < ee % 如果充放同时进行，而又没有多余的电，才算有问题
-                     fprintf('EH%d热储能结果有问题 !!! 时间是%d',IES_no,i);
-                else % 对充放同时的场景进行修正：SOC不变，充放电功率保留一个非零，且值有变化
-                    deltaSOC = result_HS_SOC(i+1,IES_no) - result_HS_SOC(i,IES_no);
-                    if deltaSOC > 0 % 表示充电
-                        eval(['result_HS_charge(i,IES_no) = deltaSOC * EH',num2str(IES_no),'.HS_totalC / EH',num2str(IES_no),'.HS_eff; ']);% 乘以容量，除以效率
-                        result_HS_discharge(i,IES_no) = 0;
-                    else % 表示放电
-                        result_HS_charge(i,IES_no) = 0;
-                        eval(['result_HS_discharge(i,IES_no) = - deltaSOC * EH',num2str(IES_no),'.HS_totalC * EH',num2str(IES_no),'.HS_eff;']); % 乘以容量，乘以效率;
-                    end
-                end
-            end
-        end
-        % 完成修正后重新计算
-        eval(['result_balance_H(:,IES_no) = result_CHP_heat(:,IES_no) + result_Boiler_heat(:,IES_no) + result_HS_discharge(:,IES_no) - result_HS_charge(:,IES_no) - EH',num2str(IES_no),'_Lh-EH', num2str(IES_no),'_Hdr;']);
-        result_check_HS(:,IES_no) = result_HS_discharge(:,IES_no) .* result_HS_charge(:,IES_no);
-    end
-    
-    
-end
+% for IES_no = 1 : 3
+%     %电、热功率平衡性测试，降低要求至大于零
+%     eval(['result_balance_P(:,IES_no) = result_Ele_loss(:,IES_no) + result_CHP_power(:,IES_no) + result_ES_discharge(:,IES_no) - result_ES_charge(:,IES_no) - EH',num2str(IES_no),'_Le - EH',num2str(IES_no),'_Edr + EH',num2str(IES_no),'_windP + EH',num2str(IES_no),'_solarP;']);
+%     eval(['result_balance_H(:,IES_no) = result_CHP_heat(:,IES_no) + result_Boiler_heat(:,IES_no) + result_HS_discharge(:,IES_no) - result_HS_charge(:,IES_no) - EH',num2str(IES_no),'_Lh - EH', num2str(IES_no),'_Hdr;']);
+%     %充、放功率至少有一个是零
+%     result_check_ES(:,IES_no) = result_ES_discharge(:,IES_no) .* result_ES_charge(:,IES_no);
+%     result_check_HS(:,IES_no) = result_HS_discharge(:,IES_no) .* result_HS_charge(:,IES_no); %有一点小问题，因为热过于充裕
+%     % 20180129 对充放电乘积约束的再思考
+%     if max(result_check_ES(:,IES_no)) > 0
+%         fprintf('EH%d电储能需要修正',IES_no);
+%         for i=1:length(result_check_ES(:,IES_no))
+%             if result_check_ES(i,IES_no)> 0
+%                 if result_balance_P(i,IES_no) < ee % 如果充放同时进行，而又没有多余的电，才算有问题
+%                      fprintf('EH%d电储能结果有问题 !!! 时间是%d',IES_no,i);
+%                 else % 对充放同时的场景进行修正：SOC不变，充放电功率保留一个非零，且值有变化
+%                     deltaSOC = result_ES_SOC(i+1,IES_no) - result_ES_SOC(i,IES_no);
+%                     if deltaSOC > 0 % 表示充电
+%                         eval(['result_ES_charge(i,IES_no) = deltaSOC * EH',num2str(IES_no),'.ES_totalC / EH',num2str(IES_no),'.ES_eff;']); % 乘以容量，除以效率
+%                         result_ES_discharge(i,IES_no) = 0;
+%                     else % 表示放电
+%                         result_ES_charge(i,IES_no) = 0;
+%                         eval(['result_ES_discharge(i,IES_no) = - deltaSOC * EH',num2str(IES_no),'.ES_totalC * EH',num2str(IES_no),'.ES_eff;']); % 乘以容量，乘以效率;
+%                     end
+%                 end
+%             end
+%         end
+%         % 完成修正后重新计算
+%         eval(['result_balance_P(:,IES_no) = result_Ele_loss(:,IES_no) + result_CHP_power(:,IES_no) + result_ES_discharge(:,IES_no) - result_ES_charge(:,IES_no) - EH',num2str(IES_no),'_Le -EH', num2str(IES_no),'_Edr + EH',num2str(IES_no),'_windP + EH',num2str(IES_no),'_solarP;']);
+%         result_check_ES(:,IES_no) = result_ES_discharge(:,IES_no) .* result_ES_charge(:,IES_no);
+%     end
+%     if max(result_check_HS(:,IES_no)) > 0
+%         fprintf('EH%d热储能需要修正',IES_no);
+%         for i=1:length(result_check_HS(:,IES_no))
+%             if result_check_HS(i,IES_no) > 0
+%                 if result_balance_H(i,IES_no) < ee % 如果充放同时进行，而又没有多余的电，才算有问题
+%                      fprintf('EH%d热储能结果有问题 !!! 时间是%d',IES_no,i);
+%                 else % 对充放同时的场景进行修正：SOC不变，充放电功率保留一个非零，且值有变化
+%                     deltaSOC = result_HS_SOC(i+1,IES_no) - result_HS_SOC(i,IES_no);
+%                     if deltaSOC > 0 % 表示充电
+%                         eval(['result_HS_charge(i,IES_no) = deltaSOC * EH',num2str(IES_no),'.HS_totalC / EH',num2str(IES_no),'.HS_eff; ']);% 乘以容量，除以效率
+%                         result_HS_discharge(i,IES_no) = 0;
+%                     else % 表示放电
+%                         result_HS_charge(i,IES_no) = 0;
+%                         eval(['result_HS_discharge(i,IES_no) = - deltaSOC * EH',num2str(IES_no),'.HS_totalC * EH',num2str(IES_no),'.HS_eff;']); % 乘以容量，乘以效率;
+%                     end
+%                 end
+%             end
+%         end
+%         % 完成修正后重新计算
+%         eval(['result_balance_H(:,IES_no) = result_CHP_heat(:,IES_no) + result_Boiler_heat(:,IES_no) + result_HS_discharge(:,IES_no) - result_HS_charge(:,IES_no) - EH',num2str(IES_no),'_Lh-EH', num2str(IES_no),'_Hdr;']);
+%         result_check_HS(:,IES_no) = result_HS_discharge(:,IES_no) .* result_HS_charge(:,IES_no);
+%     end
+%     
+%     
+% end
 
 %检查馈线的平衡性，并检查馈线的功率是否越限
-if isCentral == 0
-    result_balance_grid = gridClearDemand + sum(result_Ele,2); %2表示按列相加
-end
+
 %计算总的购电功率和总的购气功率(查看是否越限)
 % totalE = result_Ele(:,1) + result_Ele(:,2) + result_Ele(:,3);
 % totalGas = EH1_G_CHP + EH1_G_Boiler + EH2_G_CHP + EH2_G_Boiler
@@ -146,40 +142,28 @@ end
 %计算总成本 按网价计算
 totalCost1 = ( sum(result_Ele(:,1) .* elePrice) + sum(result_Gas(:,1) .* gasPrice1) ) / period;
 totalCost2 = ( sum(result_Ele(:,2) .* elePrice) + sum(result_Gas(:,2) .* gasPrice1) ) / period;
-totalCost3 = ( sum(result_Ele(:,3) .* elePrice) + sum(result_Gas(:,3) .* gasPrice3) ) / period;
+totalCost3 = ( sum(result_Ele(:,3) .* elePrice) + sum(result_Gas(:,3) .* gasPrice1) ) / period;
 
 disp(['IES1总成本为 ',num2str(totalCost1),' 元'])
 disp(['IES2总成本为 ',num2str(totalCost2),' 元'])
 disp(['IES3总成本为 ',num2str(totalCost3),' 元'])
 disp(['总成本为 ',num2str(totalCost1 + totalCost2 + totalCost3),' 元'])
 
-%按出清价格 计算成本
-% if isCentral == 0
-%     totalCost1 = ( sum(result_Ele(:,1) .* priceArray) + sum(result_Gas(:,1) .* gasPrice1) ) / period; %priceArray保留的是日内出清价格
-%     totalCost2 = ( sum(result_Ele(:,2) .* priceArray) + sum(result_Gas(:,2) .* gasPrice1) ) / period;
-%     totalCost3 = ( sum(result_Ele(:,3) .* priceArray) + sum(result_Gas(:,3) .* gasPrice3) ) / period;
-% 
-%     disp(['IES1总成本2为 ',num2str(totalCost1),' 元'])
-%     disp(['IES2总成本2为 ',num2str(totalCost2),' 元'])
-%     disp(['IES3总成本2为 ',num2str(totalCost3),' 元'])
-%     disp(['总成本2为 ',num2str(totalCost1 + totalCost2 + totalCost3),' 元'])
-% end
-
 %计算弃风光率
-waste_power1 = sum(result_balance_P(:,1)) / sum(EH1_solarP + EH1_windP) * 100; % 分子分母的period抵消了
-waste_power2 = sum(result_balance_P(:,2)) / sum(EH2_solarP + EH2_windP) * 100;
-waste_power3 = sum(result_balance_P(:,3)) / sum(EH3_solarP + EH3_windP) * 100;
-disp(['IES1弃风光率为 ',num2str(waste_power1),' %'])
-disp(['IES2弃风光率为 ',num2str(waste_power2),' %'])
-disp(['IES3弃风光率为 ',num2str(waste_power3),' %'])
-
-%计算热浪费率
-waste_heat1 = sum(result_balance_H(:,1)) / sum(EH1_Lh) * 100; % 分子分母的period抵消了
-waste_heat2 = sum(result_balance_H(:,2)) / sum(EH2_Lh) * 100;
-waste_heat3 = sum(result_balance_H(:,3)) / sum(EH3_Lh) * 100;
-disp(['IES1热浪费率为 ',num2str(waste_heat1),' %'])
-disp(['IES2热浪费率为 ',num2str(waste_heat2),' %'])
-disp(['IES3热浪费率为 ',num2str(waste_heat3),' %'])
+% waste_power1 = sum(result_balance_P(:,1)) / sum(EH1_solarP + EH1_windP) * 100; % 分子分母的period抵消了
+% waste_power2 = sum(result_balance_P(:,2)) / sum(EH2_solarP + EH2_windP) * 100;
+% waste_power3 = sum(result_balance_P(:,3)) / sum(EH3_solarP + EH3_windP) * 100;
+% disp(['IES1弃风光率为 ',num2str(waste_power1),' %'])
+% disp(['IES2弃风光率为 ',num2str(waste_power2),' %'])
+% disp(['IES3弃风光率为 ',num2str(waste_power3),' %'])
+% 
+% %计算热浪费率
+% waste_heat1 = sum(result_balance_H(:,1)) / sum(EH1_Lh) * 100; % 分子分母的period抵消了
+% waste_heat2 = sum(result_balance_H(:,2)) / sum(EH2_Lh) * 100;
+% waste_heat3 = sum(result_balance_H(:,3)) / sum(EH3_Lh) * 100;
+% disp(['IES1热浪费率为 ',num2str(waste_heat1),' %'])
+% disp(['IES2热浪费率为 ',num2str(waste_heat2),' %'])
+% disp(['IES3热浪费率为 ',num2str(waste_heat3),' %'])
 
 % %计算迭代次数
 % times_dayahead = sum(iterationTimes(:,1)) / length(iterationTimes(:,1));
@@ -223,7 +207,7 @@ c3 = ColorHex('A63C00');
 %--------------------阻塞管理---------------------
 if isCentral == 0
     c4_clearingPrice = priceArray;
-    c4_gridClearDemand = gridClearDemand';
+    c4_gridClearDemand = - sum(result_Ele , 2);
 else
     c4_clearingPrice = elePrice;
     c4_gridClearDemand = - sum(result_Ele , 2);
@@ -267,11 +251,10 @@ for IES_no = 1 : IESNUMBER
     eval(['bar_positive = [result_Ele_loss_positive(:,IES_no), result_CHP_power(:,IES_no), EH', num2str(IES_no),'_solarP + EH', num2str(IES_no), '_windP, result_ES_discharge(:,IES_no)] ./ 1000;']);
     bar_negtive = [result_Ele_loss_negtive(:,IES_no), -result_ES_charge(:,IES_no)] ./1000;
     eval(['Egen = (result_Ele_loss(:,IES_no) + result_CHP_power(:,IES_no) + EH', num2str(IES_no),'_solarP + EH', num2str(IES_no),'_windP + result_ES_discharge(:,IES_no) - result_ES_charge(:,IES_no)) ./1000 ;']);
-    eval(['Eload_base = (EH', num2str(IES_no),'_Le + EH', num2str(IES_no),'_Edr) ./1000;']);
-    eval(['Eload = EH', num2str(IES_no),'_Le ./1000;']);
+    eval(['Eload = (EH', num2str(IES_no),'_Le + EH', num2str(IES_no),'_Edr) ./1000;']);
+    eval(['Eload_base = EH', num2str(IES_no),'_Le ./1000;']);
 
-    [AX,H1,H2] = plotyy(t1, bar_positive, t1,[Egen, Eload_base, Eload] ,stackedbar,prettyline);
-    
+    [AX,H1,H2] = plotyy(t1, bar_positive, t2,result_ES_SOC(:,IES_no),stackedbar,prettyline);
     H1(1).EdgeColor = dodgerblue;
     H1(1).FaceColor = H1(1).EdgeColor;
     H1(2).EdgeColor = yellowgreen;
@@ -286,13 +269,13 @@ for IES_no = 1 : IESNUMBER
     H3(1).FaceColor = H3(1).EdgeColor;
     H3(2).EdgeColor = H1(4).EdgeColor;
     H3(2).FaceColor = H3(2).EdgeColor;
+    H4 = plot(t1,[Eload_base, Eload]);
     
-    set(H2(1),'Color',firebrick, 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
-    set(H2(2),'Color','blue', 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
-    set(H2(3),'Color','black', 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
+    set(H4(1),'Color','black', 'LineStyle','-.','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
+    set(H4(2),'Color','black', 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
     
     set(get(AX(1),'Ylabel'),'String','电功率(MW)')
-    set(get(AX(2),'Ylabel'),'String','电功率(MW)')
+    set(get(AX(2),'Ylabel'),'String','SOC')
     xlabel(sprintf('IES%d',IES_no))
     set(AX(1),'xlim',[0,24*period+1])
     set(AX(2),'xlim',[0,24*period+1])
@@ -300,10 +283,10 @@ for IES_no = 1 : IESNUMBER
     set(AX(2),'XTick',[],'XTickLabel',[])
     set(AX(1),'ylim',[-1,2.5])
     set(AX(1),'YTick',-1:0.5:2.5)
-    set(AX(2),'ylim',[-1,2.5])
-    set(AX(2),'YTick',-1:0.5:2.5)
+    set(AX(2),'ylim',[0,1])
+    set(AX(2),'YTick',0.1:0.2:1)
     
-    H10 = legend([H1(1),H1(2),H1(3),H1(4),H2(1),H2(2),H2(3)], '支线购电','CHP','可再生能源','ESS放电','总发电量','总基荷','总负荷','Location','northoutside','Orientation','horizontal');
+    H10 = legend([H1(1),H1(2),H1(3),H1(4),H2,H4(1),H4(2)], '支线购电','CHP','可再生能源','ESS放电','电储能SOC','总基荷','总负荷','Location','northoutside','Orientation','horizontal');
     set(H10,'Box','off');
     set(gcf,'Position',[0 0 400 500]);
     
@@ -316,24 +299,25 @@ for IES_no = 1 : IESNUMBER
     bar_positive = [result_CHP_heat(:,IES_no), result_Boiler_heat(:,IES_no), result_HS_discharge(:,IES_no)] ./1000;
     bar_negtive = -result_HS_charge(:,IES_no) ./1000;
     Hgen = (result_CHP_heat(:,IES_no) + result_Boiler_heat(:,IES_no) + result_HS_discharge(:,IES_no) - result_HS_charge(:,IES_no)) ./1000;
-    eval(['Hload_base = (EH', num2str(IES_no),'.Lh_real + EH', num2str(IES_no),'_Hdr) ./1000;']);
-    eval(['Hload = EH', num2str(IES_no),'.Lh_real ./1000;']);
-    [AX,H1,H2] = plotyy(t1, bar_positive, t1,[Hgen, Hload_base, Hload] ,stackedbar,prettyline);
+    eval(['Hload = (EH', num2str(IES_no),'.Lh_real + EH', num2str(IES_no),'_Hdr) ./1000;']);
+    eval(['Hload_base = EH', num2str(IES_no),'.Lh_real ./1000;']);
+    [AX,H1,H2] = plotyy(t1, bar_positive, t2,result_HS_SOC(:,IES_no),stackedbar,prettyline);
     H1(1).EdgeColor = yellowgreen;
     H1(1).FaceColor = H1(1).EdgeColor;
     H1(2).EdgeColor = gold;
     H1(2).FaceColor = H1(2).EdgeColor;
     H1(3).EdgeColor = indianred;
     H1(3).FaceColor = H1(3).EdgeColor;
-    set(H2(1),'Color',firebrick, 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
-    set(H2(2),'Color','blue', 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
-    set(H2(3),'Color','black', 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
     H3 = bar(bar_negtive,'stacked');
     H3(1).EdgeColor = H1(3).EdgeColor;
     H3(1).FaceColor = H3(1).EdgeColor;
     
+    H4 = plot(t1,[Hload_base, Hload]);
+    set(H4(1),'Color','black', 'LineStyle','-.','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
+    set(H4(2),'Color','black', 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
+  
     set(get(AX(1),'Ylabel'),'String','热功率(MW)')
-    set(get(AX(2),'Ylabel'),'String','热功率(MW)')
+    set(get(AX(2),'Ylabel'),'String','SOC')
     xlabel(sprintf('IES%d',IES_no))
     set(AX(1),'xlim',[0,24*period+1])
     set(AX(2),'xlim',[0,24*period+1])
@@ -341,11 +325,12 @@ for IES_no = 1 : IESNUMBER
     set(AX(2),'XTick',[],'XTickLabel',[])
     set(AX(1),'ylim',[-1,2])
     set(AX(1),'YTick',-1:0.5:2)
-    set(AX(2),'ylim',[-1,2])
-    set(AX(2),'YTick',-1:0.5:2)
+    set(AX(2),'ylim',[0,1])
+    set(AX(2),'YTick',0.1:0.2:1)
     
-    H10 = legend([H1(1),H1(2),H1(3),H2(1),H2(2),H2(3)], 'CHP','GF','ThSS放电','总发热量','总基荷','总负荷','Location','northoutside','Orientation','horizontal');
+    H10 = legend([H1(1),H1(2),H1(3),H2,H4(1),H4(2)], 'CHP','GF','ThSS放电','热储能SOC','总基荷','总负荷','Location','northoutside','Orientation','horizontal');
     set(H10,'Box','off');
+    set(gcf,'Position',[0 0 400 500]);
 end
 
 % IES内用电 用气

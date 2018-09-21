@@ -182,8 +182,8 @@ classdef EH_local_170828_v3 < handle
                 %改为只计当前时刻的预测误差，否则累计的误差过大；频繁重复预测也不科学
                 for pt = t_current: 24 * period
                     if pt == t_current
-                        dev_l = 0.03;
-                        dev_res = 0.05;
+                        dev_l = 0;
+                        dev_res = 0;
                     else
                         dev_l = 0.08;
                         dev_res = 0.1;
@@ -411,8 +411,6 @@ classdef EH_local_170828_v3 < handle
             %电、热平衡约束
             Aeq_Ebus = zeros(time, var);
             Aeq_Hbus = zeros(time, var);
-            %beq_Ebus = - obj.Le;
-            %beq_Hbus = - obj.Lh;
             beq_Ebus = - obj.Le_pre(t_current : 24*period) + obj.windP_pre(t_current : 24*period) + obj.solarP_pre(t_current : 24*period); %Le的size不变，但是取部分值
             beq_Hbus = - obj.Lh_pre(t_current : 24*period); %Lh的size不变，但是取部分值
             for i=1:time
@@ -507,13 +505,11 @@ classdef EH_local_170828_v3 < handle
             %归纳所有线性约束
             %等式约束包括：电、热平衡约束（改为不等式），电、热储能平衡性约束（改为不等式）
             %不等式约束包括：SOC约束，购气量和的约束，（爬坡率约束）
-            Aeq=[Aeq_Edr; Aeq_Hdr];
-            beq=[beq_Edr; beq_Hdr];
-%             A=[Aeq_Ebus; Aeq_Hbus;   Aeq_ES; Aeq_HS;    A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
-%             b=[beq_Ebus'; beq_Hbus';   beq_ES; beq_HS;    b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
-            A=[Aeq_Ebus; Aeq_Hbus;     A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
-            b=[beq_Ebus'; beq_Hbus';    b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
-              
+            Aeq=[Aeq_Edr; Aeq_Hdr; Aeq_Hbus; ];
+            beq=[beq_Edr; beq_Hdr; beq_Hbus';];
+            A=[ Aeq_Ebus;    Aeq_ES; Aeq_HS;    A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
+            b=[ beq_Ebus';    beq_ES; beq_HS;    b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
+             
             %             %fmincon需要列出一个初始可行解
             %             x0 = zeros(var,1);
             %             for i = 1 : time
@@ -670,11 +666,13 @@ classdef EH_local_170828_v3 < handle
             %归纳所有线性约束
             %等式约束包括：电、热平衡约束（改为不等式），电、热储能平衡性约束（改为不等式）
             %不等式约束包括：SOC约束，购气量和的约束，（爬坡率约束）
-            Aeq=[Aeq_Edr; Aeq_Hdr];
-            beq=[beq_Edr; beq_Hdr];
-            A=[Aeq_Ebus; Aeq_Hbus;   Aeq_ES; Aeq_HS;    A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
-            b=[beq_Ebus'; beq_Hbus';   beq_ES; beq_HS;    b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
-            
+            Aeq=[Aeq_Edr; Aeq_Hdr;Aeq_Hbus;];
+            beq=[beq_Edr; beq_Hdr;beq_Hbus';];
+            A=[Aeq_Ebus;    Aeq_ES; Aeq_HS;    A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
+            b=[beq_Ebus';    beq_ES; beq_HS;    b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
+%              A=[Aeq_Ebus;        A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
+%             b=[beq_Ebus';        b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
+%        
            % 需要额外增加一个购电量的上、下限约束
             A_eleLimit_total = zeros(time, var);
             for i=1:time

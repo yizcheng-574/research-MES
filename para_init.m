@@ -5,7 +5,7 @@ close all
 % 主程序
 % 20180309 v3 重新改回1小时，可以再进一步加大预测误差，风光的标准差分开，数据更贴近真实
 
-global period off_grid EH1 EH2 EH3
+global period off_grid EH1 EH2 EH3 Grid1
 period = 60 / 60; % 分母是时间间隔
 
 if period == 1
@@ -23,10 +23,10 @@ elseif period == 4 % 只有174家公司了
 end
 load '../gridPriceRecord'
 Le_max = [2 , 2.5 , 1.5] * 1000;
-Le_dr_rate = [0.1, 0.2, 0.4];
+Le_dr_rate = [0.1, 0.2, 0];
 Lh_max = [1 , 1 , 2] * 1000;
-Lh_dr_rate = [0.1, 0.3, 0.3];
-solar_max = [1 , 0 , 0.5] * 1000;
+Lh_dr_rate = [0.2, 0.3, 0];
+solar_max = [1 , 0.1 , 0.5] * 1000;
 wind_max = [0.3 , 1 , 0.1] * 1000;
 % IES1 工业区，电热负荷都比较平，白天稍高，热大于电，负荷型
 EH1_Le = loadValue(:,94); % 对应134号公司 %/10
@@ -84,8 +84,8 @@ clear loadName loadValue renewableName solarValue windValue
 
 global minMarketPrice maxMarketPrice priceNumbers step
 
-minMarketPrice = 0;
-maxMarketPrice = 1.5;
+minMarketPrice = 0.1;
+maxMarketPrice = 1;
 step = 0.1; %只有在单次出清的时候用得到
 priceNumbers = (maxMarketPrice - minMarketPrice)/step + 1; %一个投标向量的长度（点数），段数 + 1 = 点数
 marketInfo = [minMarketPrice; maxMarketPrice; step; priceNumbers];
@@ -101,7 +101,7 @@ global elePrice
 %}
 %实时电价
 elePrice = gridPriceRecord( 49 : 49 + 24 - 1)';
-elePrice = ( elePrice - min(elePrice) ) / (max(elePrice) - min(elePrice)) * 0.5 + 0.2 ;
+elePrice = ( elePrice - min(elePrice) ) / (max(elePrice) - min(elePrice)) * 0.8 + 0.2 ;
 clear gridPriceRecord
 
 % 气网特性
@@ -114,14 +114,14 @@ gasLimit3 = 1e6;
 % gasLimit_total = 150; %暂时无法对天然气总量做单独约束，只能默认是各支线约束的和
 
 %CHP的参数
-CHP1_para = [0.35, 0.45, 1400, 0]; % CHP_GE_eff_in, CHP_GH_eff_in, CHP_Prate_in, CHP_Pmin_Rate_in
+CHP1_para = [0.30, 0.42, 1400, 0]; % CHP_GE_eff_in, CHP_GH_eff_in, CHP_Prate_in, CHP_Pmin_Rate_in
 CHP2_para = [0.35, 0.45, 1200, 0];
-CHP3_para = [0.35, 0.45, 1500, 0];
+CHP3_para = [0.4, 0.5, 1, 0];
 
 %锅炉
-Boiler1_para = [0.90; Lh_max(1)]; % Boiler_eff_in, Boiler_Prate_in
-Boiler2_para = [0.90; Lh_max(2)];
-Boiler3_para = [0.90; Lh_max(3)];
+Boiler1_para = [0.90; Lh_max(1)/0.9]; % Boiler_eff_in, Boiler_Prate_in
+Boiler2_para = [0.90; Lh_max(2)/0.9];
+Boiler3_para = [0.90; Lh_max(3)*2];
 
 %电储能和热储能
 % ES_totalC_in, ES_maxSOC_in, ES_minSOC_in, ES_currentSOC_in, ES_targetSOC_in, ES_chargeTime, ES_eff_in
@@ -134,13 +134,13 @@ Boiler3_para = [0.90; Lh_max(3)];
         HS2_para = [1500, 0.9, 0.1, 0.5, 0.5, 5, 0.9];
         HS3_para = [10, 0.9, 0.1, 0.5, 0.5, 5, 0.9];
 %}
-ES1_para = [2000, 0.8, 0.2, 0.1, 0.4, 6, 0.9];
-ES2_para = [2000, 0.85, 0.15, 0.1, 0.4, 6, 0.9];
-ES3_para = [2000, 0.85, 0.15, 0.1, 0.4, 6, 0.9];
+ES1_para = [1, 0.8, 0.2, 0.2, 0.4, 6, 0.9];
+ES2_para = [1000, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
+ES3_para = [2000, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
 % HS_totalC_in, HS_maxSOC_in, HS_minSOC_in, HS_currentSOC_in, HS_targetSOC_in, HS_chargeTime, HS_eff_in
-HS1_para = [2000, 0.9, 0.1, 0.1, 0.5, 5, 0.9];
-HS2_para = [2000, 0.9, 0.1, 0.1, 0.5, 5, 0.9];
-HS3_para = [2000, 0.9, 0.1, 0.1, 0.5, 5, 0.9];
+HS1_para = [2000, 0.9, 0.1, 0.6, 0.5, 5, 0.9];
+HS2_para = [1000, 0.9, 0.1, 0.6, 0.5, 5, 0.9];
+HS3_para = [1, 0.9, 0.1, 0.5, 0.6, 0.5, 0.9];
 
 % 负荷和风光预测误差
 dev_L = 3/100; %百分数 1
@@ -171,15 +171,15 @@ EH1_Lh_drP_total = EH1_Lh_drP_rate * 10;
 EH2_Lh_drP_total = EH2_Lh_drP_rate * 10;
 EH3_Lh_drP_total = EH3_Lh_drP_rate * 10;
 
-singleLimit = Le_max;
+singleLimit = Le_max * 1.2;
 totalLimit = mean(EH1_Le_jing) + mean(EH2_Le_jing) + mean(EH3_Le_jing)+...
-    (EH1_Le_drP_total +EH1_Le_drP_total + EH1_Le_drP_total )/(24 * period);
+    (EH1_Le_drP_total +EH1_Le_drP_total + EH1_Le_drP_total )/(24 * period) ;
 reverseRate = 4;
 % 支线: 下级向上级购电、售电约束，再加一个线损率5-7%
 eleLimit1 = [singleLimit(1), -singleLimit(1)/reverseRate, 0.94];
 eleLimit2 = [singleLimit(2), -singleLimit(2)/reverseRate, 0.94];
 eleLimit3 = [singleLimit(3), -singleLimit(3)/reverseRate, 0.94];
-eleLimit_total = [totalLimit, -totalLimit/reverseRate]; % 馈线
+eleLimit_total = [totalLimit * 1.1, -totalLimit/reverseRate]; % 馈线
 
 % 用于存放最终优化结果
 result_ES_SOC = zeros(24 * period + 1 , IESNUMBER);
