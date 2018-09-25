@@ -22,10 +22,10 @@ elseif period == 4 % 只有174家公司了
     load windValue_15min.mat
 end
 load '../gridPriceRecord'
-Le_max = [2 , 2.5 , 1.5] * 1000;
-Le_dr_rate = [0.1, 0.2, 0];
-Lh_max = [1 , 1 , 2] * 1000;
-Lh_dr_rate = [0.2, 0.3, 0];
+Le_max = [2 , 2.3 , 1.5] * 1000;
+Le_dr_rate = [0.1, 0.2, 0.4];
+Lh_max = [1 , 2 , 2] * 1000;
+Lh_dr_rate = [0.2, 0.3, 0.3];
 solar_max = [1 , 0.1 , 0.5] * 1000;
 wind_max = [0.3 , 1 , 0.1] * 1000;
 % IES1 工业区，电热负荷都比较平，白天稍高，热大于电，负荷型
@@ -116,7 +116,7 @@ gasLimit3 = 1e6;
 %CHP的参数
 CHP1_para = [0.30, 0.42, 1400, 0]; % CHP_GE_eff_in, CHP_GH_eff_in, CHP_Prate_in, CHP_Pmin_Rate_in
 CHP2_para = [0.35, 0.45, 1200, 0];
-CHP3_para = [0.4, 0.5, 1, 0];
+CHP3_para = [0.4, 0.5, 1200, 0];
 
 %锅炉
 Boiler1_para = [0.90; Lh_max(1)/0.9]; % Boiler_eff_in, Boiler_Prate_in

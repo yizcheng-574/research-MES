@@ -131,14 +131,14 @@ classdef EH_local_170828_v3 < handle
             obj.ES_totalC = ES_para(1);
             obj.ES_maxSOC = ES_para(2);
             obj.ES_minSOC = ES_para(3);
-            obj.ES_targetSOC = ES_para(5);
+            obj.ES_targetSOC = ES_para(4);
             obj.ES_Pmax = obj.ES_totalC / ES_para(6);
             obj.ES_eff = ES_para(7);
             
             obj.HS_totalC = HS_para(1);
             obj.HS_maxSOC = HS_para(2);
             obj.HS_minSOC = HS_para(3);
-            obj.HS_targetSOC = HS_para(5);
+            obj.HS_targetSOC = HS_para(4);
             obj.HS_Hmax = obj.HS_totalC / HS_para(6);
             obj.HS_eff = HS_para(7);
             
@@ -505,10 +505,10 @@ classdef EH_local_170828_v3 < handle
             %归纳所有线性约束
             %等式约束包括：电、热平衡约束（改为不等式），电、热储能平衡性约束（改为不等式）
             %不等式约束包括：SOC约束，购气量和的约束，（爬坡率约束）
-            Aeq=[Aeq_Edr; Aeq_Hdr; Aeq_Hbus; ];
-            beq=[beq_Edr; beq_Hdr; beq_Hbus';];
-            A=[ Aeq_Ebus;    Aeq_ES; Aeq_HS;    A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
-            b=[ beq_Ebus';    beq_ES; beq_HS;    b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
+            Aeq=[Aeq_Edr; Aeq_Hdr; Aeq_Hbus; Aeq_ES; Aeq_HS;];
+            beq=[beq_Edr; beq_Hdr; beq_Hbus';beq_ES; beq_HS;];
+            A=[ Aeq_Ebus;       A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
+            b=[ beq_Ebus';      b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
              
             %             %fmincon需要列出一个初始可行解
             %             x0 = zeros(var,1);
@@ -666,10 +666,10 @@ classdef EH_local_170828_v3 < handle
             %归纳所有线性约束
             %等式约束包括：电、热平衡约束（改为不等式），电、热储能平衡性约束（改为不等式）
             %不等式约束包括：SOC约束，购气量和的约束，（爬坡率约束）
-            Aeq=[Aeq_Edr; Aeq_Hdr;Aeq_Hbus;];
-            beq=[beq_Edr; beq_Hdr;beq_Hbus';];
-            A=[Aeq_Ebus;    Aeq_ES; Aeq_HS;    A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
-            b=[beq_Ebus';    beq_ES; beq_HS;    b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
+            Aeq=[Aeq_Edr; Aeq_Hdr;Aeq_Hbus; Aeq_ES; Aeq_HS; ];
+            beq=[beq_Edr; beq_Hdr;beq_Hbus';beq_ES; beq_HS;];
+            A=[Aeq_Ebus;      A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
+            b=[beq_Ebus';        b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
 %              A=[Aeq_Ebus;        A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
 %             b=[beq_Ebus';        b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
 %        

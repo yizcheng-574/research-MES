@@ -57,6 +57,8 @@ for IES_no = 1 : 3
     ylabel('发电功率(MW)')
     legend('光伏','风电','Location','northoutside','Orientation','horizontal')
 end
+set(gcf,'Position',[0 0 800 500]);
+
 
 %--------------------------------------数据处理--------------------------------------
 result_Gas = result_CHP_G + result_Boiler_G;
@@ -288,7 +290,7 @@ for IES_no = 1 : IESNUMBER
     
     H10 = legend([H1(1),H1(2),H1(3),H1(4),H2,H4(1),H4(2)], '支线购电','CHP','可再生能源','ESS放电','电储能SOC','总基荷','总负荷','Location','northoutside','Orientation','horizontal');
     set(H10,'Box','off');
-    set(gcf,'Position',[0 0 400 500]);
+    set(gcf,'Position',[0 0 550 500]);
     
 end
 %%%%%%%%%%%%%%
@@ -330,7 +332,7 @@ for IES_no = 1 : IESNUMBER
     
     H10 = legend([H1(1),H1(2),H1(3),H2,H4(1),H4(2)], 'CHP','GF','ThSS放电','热储能SOC','总基荷','总负荷','Location','northoutside','Orientation','horizontal');
     set(H10,'Box','off');
-    set(gcf,'Position',[0 0 400 500]);
+    set(gcf,'Position',[0 0 500 500]);
 end
 
 % IES内用电 用气

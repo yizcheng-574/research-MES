@@ -24,7 +24,7 @@ for pt = 1 : temporal
         EH2.predict(pt);
         EH3.predict(pt);
     end
-    number = 1;
+    number = 1; k = 1;
     lamda_old = -10 * ones(24 * period - pt + 1, 1);
     lamda_new = zeros(24 * period - pt + 1, 1); %取初始值：对预测电价没有偏差
     lamda_record = zeros(24 * period - pt + 1 , maxIteration + 1);
@@ -55,7 +55,7 @@ for pt = 1 : temporal
         
         clearDemand_grid_new=zeros(24 * period - pt + 1 ,1);
         for i = 1: 24 * period - pt + 1
-            if abs(lamda_new(i))  <1e-4
+            if lamda_new(i) == 0 
                 clearDemand_grid_new(i) = clearDemand_EH1_new(i) + clearDemand_EH2_new(i) + clearDemand_EH3_new(i);
                 if clearDemand_grid_new(i) > eleLimit_total(1)
                     clearDemand_grid_new(i) = eleLimit_total(1);
@@ -63,7 +63,7 @@ for pt = 1 : temporal
                 if clearDemand_grid_new(i) < eleLimit_total(2)
                     clearDemand_grid_new(i) = eleLimit_total(2);
                 end
-            elseif lamda_new(i) > 1e-4
+            elseif lamda_new(i) > 0
                 clearDemand_grid_new(i) =eleLimit_total(1);
             else
                 clearDemand_grid_new(i) =eleLimit_total(2);
@@ -77,12 +77,12 @@ for pt = 1 : temporal
             lamda_record(: , 1) = lamda_new;
             step_record(1) = step;
             price_record(:,1) = priceArray;
-            delta_lambda = balanceDemand .* iterativeStep /sqrt(sum(balanceDemand.^2)) ;;
+            delta_lambda = balanceDemand .* iterativeStep /sqrt(sum(balanceDemand.^2)) ;
             step = iterativeStep;
             lamda_old = lamda_new;
             lamda_new = lamda_old +  delta_lambda;
             number = 2;
-        elseif phi(number) - phi(number-1) > 0
+        elseif phi(number) - phi(number-1) > -1
             balanceDemand_reocrd(:,number) = balanceDemand;
             lamda_record(: , number) = lamda_new;
             step_record(number) = step;
@@ -92,18 +92,18 @@ for pt = 1 : temporal
             step = iterativeStep;
             lamda_old = lamda_new;
             lamda_new = lamda_old +  delta_lambda;
-            if number > 10 && max(step_record(number-5: number))< 1e-5
+            if  number> 5 && max(step_record(number-5: number))< 1e-3
                 break;
             end
             number = number + 1;
+            k = k + 1;
             
         else
             step = step / 2;
             delta_lambda = balanceDemand .* step /sqrt(sum(balanceDemand.^2)) ;
             lamda_new = lamda_old +  delta_lambda;
+            k = k + 1;
         end
-        lamda_new(abs(lamda_new) < 1e-3) = 0;
-        
     end
     
     
