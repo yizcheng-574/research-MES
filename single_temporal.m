@@ -1,5 +1,5 @@
 %单时段的优化问题，与all_temporal比较
-global minMarketPrice maxMarketPrice period
+global minMarketPrice maxMarketPrice period IESNUMBER
 ee = 1e-2; %0.0001 0.0003
 iterativeStep = 1e-5; %0.00001 0.0001
 iterationTimes = zeros(24*period, 2); %记录迭代次数
@@ -17,6 +17,19 @@ if isGrad == 1%次梯度法求解
             EH1.predict(pt);
             EH2.predict(pt);
             EH3.predict(pt);
+        end
+        if pt == 1 || pt == 12 || pt ==24
+            [demand,price] = IESdemand_curve(priceArray, pt);
+            figure;
+            hold on;
+            for ies_no = 1 : IESNUMBER
+                plot(price,demand(ies_no,:),'LineWidth',1.5);
+            end
+            plot(price,sum(demand),'LineWidth',1.5);
+            xlabel('电价')
+            legend('IES1','IES2','IES3','总')
+            title([pt ,'时刻投标曲线']);
+            ylabel('需求')
         end
         % 最低价格，一般都是需求大于供给
         priceArray(pt) = minMarketPrice;

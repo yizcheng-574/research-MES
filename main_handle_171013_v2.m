@@ -230,8 +230,8 @@ set(AX(2),'xlim',[0,24*period+1])
 set(gca,'XTick',0:(24*period/4):24*period, 'XTickLabel',{'0:00','6:00','12:00','18:00','24:00'})
 set(AX(2),'XTick',[],'XTickLabel',[])
 
-H3 = stairs(t2, ones(24*period+1, 1) .* eleLimit_total, 'Color',gray,'LineStyle','--','LineWidth',1);
-stairs(t2, ones(24*period+1, 1) * eleLimit_total / reverseRate, 'Color',gray,'LineStyle','--','LineWidth',1);
+H3 = stairs(t2, ones(24*period+1, 1) .* eleLimit_total(1)/1000, 'Color',gray,'LineStyle','--','LineWidth',1);
+stairs(t2, ones(24*period+1, 1) * eleLimit_total(2)/1000, 'Color',gray,'LineStyle','--','LineWidth',1);
 
 H10 = legend([H1,H2(1),H2(2),H3(1)],'馈线功率','本地电价','主网电价','馈线功率约束');
 set(H10,'Box','off');
@@ -551,3 +551,5 @@ ylabel('电价(元/kWh)')
 % set(get(gca,'YLabel'),'FontSize',14);
 set(gcf,'Position',[0 0 400 300]);
 %}
+
+

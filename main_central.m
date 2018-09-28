@@ -1,7 +1,7 @@
 % 集中式优化：单次
 clc;clear;
 para_init;
-isCentral = 1;
+isCentral = 2;
 %1 全时段集中式优化
 %2 集中式滚动优化
 %0 分布式滚动优化
@@ -10,9 +10,9 @@ if isCentral == 2
     temporal = 24* period;
 else
     temporal = 1;
-%     EH1.predict(0);
-%     EH2.predict(0);
-%     EH3.predict(0);
+    EH1.predict(0);
+    EH2.predict(0);
+    EH3.predict(0);
 end
 for pt = 1: temporal
     EH1.predict(pt);

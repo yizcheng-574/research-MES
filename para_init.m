@@ -5,7 +5,7 @@ close all
 % 主程序
 % 20180309 v3 重新改回1小时，可以再进一步加大预测误差，风光的标准差分开，数据更贴近真实
 
-global period off_grid EH1 EH2 EH3 Grid1
+global period off_grid EH1 EH2 EH3 Grid1 IESNUMBER
 period = 60 / 60; % 分母是时间间隔
 
 if period == 1
@@ -105,7 +105,7 @@ elePrice = ( elePrice - min(elePrice) ) / (max(elePrice) - min(elePrice)) * 0.8 
 clear gridPriceRecord
 
 % 气网特性
-% global gasPrice1 gasPrice3  % 不需要全局变量吧
+global gasPrice1 gasPrice3  % 不需要全局变量吧
 gasPrice1 = 0.334; % 3.3元每立方米换算后的值
 gasPrice3 = 0.284; % 2.8元每立方米换算后的值
 gasLimit1 = 1e6; %暂时不考虑回售天然气
@@ -115,13 +115,13 @@ gasLimit3 = 1e6;
 
 %CHP的参数
 CHP1_para = [0.30, 0.42, 1400, 0]; % CHP_GE_eff_in, CHP_GH_eff_in, CHP_Prate_in, CHP_Pmin_Rate_in
-CHP2_para = [0.35, 0.45, 1200, 0];
-CHP3_para = [0.4, 0.5, 1200, 0];
+CHP2_para = [0.35, 0.45, 1, 0];
+CHP3_para = [0.28, 0.56, 1200, 0];
 
 %锅炉
 Boiler1_para = [0.90; Lh_max(1)/0.9]; % Boiler_eff_in, Boiler_Prate_in
 Boiler2_para = [0.90; Lh_max(2)/0.9];
-Boiler3_para = [0.90; Lh_max(3)*2];
+Boiler3_para = [0.90; Lh_max(3)/0.9];
 
 %电储能和热储能
 % ES_totalC_in, ES_maxSOC_in, ES_minSOC_in, ES_currentSOC_in, ES_targetSOC_in, ES_chargeTime, ES_eff_in
