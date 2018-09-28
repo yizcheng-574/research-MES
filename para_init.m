@@ -134,7 +134,7 @@ Boiler3_para = [0.90; Lh_max(3)/0.9];
         HS2_para = [1500, 0.9, 0.1, 0.5, 0.5, 5, 0.9];
         HS3_para = [10, 0.9, 0.1, 0.5, 0.5, 5, 0.9];
 %}
-ES1_para = [1, 0.8, 0.2, 0.2, 0.4, 6, 0.9];
+ES1_para = [1, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
 ES2_para = [1000, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
 ES3_para = [2000, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
 % HS_totalC_in, HS_maxSOC_in, HS_minSOC_in, HS_currentSOC_in, HS_targetSOC_in, HS_chargeTime, HS_eff_in
