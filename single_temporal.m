@@ -214,7 +214,7 @@ else    %二分法求解
         iterationNumber = 2;
         if sum(clearDemand_minPrice) * sum(clearDemand_maxPrice) <= 0 % 说明出清点在这个区间内，有两个问题，一是等于零是否直接结束，二是如果出清点不唯一怎么办
             % 市场出清得到出清价格，并更新预测电价序列
-            [priceArray(pt), clearDemand] = iterativeClear(minMarketPrice, maxMarketPrice, clearDemand_minPrice, clearDemand_maxPrice, ee, priceArray, gasPrice1, gasPrice3, pt);
+            [priceArray(pt), clearDemand] = iterativeClear(minMarketPrice, maxMarketPrice, clearDemand_minPrice, clearDemand_maxPrice, ee, priceArray, gasPrice1, pt);
         else
             disp('Clearing point is not in the given interval.')
         end
