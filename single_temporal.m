@@ -1,5 +1,5 @@
 %单时段的优化问题，与all_temporal比较
-global minMarketPrice maxMarketPrice period IESNUMBER
+global minMarketPrice maxMarketPrice period IESNUMBER elePrice
 ee = 1e-2; %0.0001 0.0003
 iterativeStep = 1e-5; %0.00001 0.0001
 iterationTimes = zeros(24*period, 2); %记录迭代次数
@@ -17,50 +17,7 @@ if isGrad == 1%次梯度法求解
             EH1.predict(pt);
             EH2.predict(pt);
             EH3.predict(pt);
-        end
-        if pt == 1 || pt == 12 || pt ==24
-            [demand,price] = IESdemand_curve(priceArray, pt);
-            figure;
-            hold on;
-            for ies_no = 1 : IESNUMBER
-                plot(price,demand(ies_no,:),'LineWidth',1.5);
-            end
-            plot(price,sum(demand),'LineWidth',1.5);
-            xlabel('电价')
-            legend('IES1','IES2','IES3','总')
-            title([pt ,'时刻投标曲线']);
-            ylabel('需求')
-        end
-        % 最低价格，一般都是需求大于供给
-        priceArray(pt) = minMarketPrice;
-        [x,~,~,~,~] = EH1.handlePrice(priceArray, gasPrice1, pt);
-        clearDemand_minPrice_EH1 = x(1);
-        [x,~,~,~,~] = EH2.handlePrice(priceArray, gasPrice1, pt);
-        clearDemand_minPrice_EH2 = x(1);
-        [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice1, pt);
-        clearDemand_minPrice_EH3 = x(1);
-        clearDemand_minPrice_grid = Grid1.handlePrice(priceArray(pt), pt);
-        clearDemand_minPrice = [clearDemand_minPrice_grid; clearDemand_minPrice_EH1; clearDemand_minPrice_EH2; clearDemand_minPrice_EH3]; % 需求为正，供给为负
-        
-        % 最高价格，一般都是供给大于需求
-        priceArray(pt) = maxMarketPrice;
-        [x,~,~,~,~] = EH1.handlePrice(priceArray, gasPrice1, pt);
-        clearDemand_maxPrice_EH1 = x(1);
-        [x,~,~,~,~] = EH2.handlePrice(priceArray, gasPrice1, pt);
-        clearDemand_maxPrice_EH2 = x(1);
-        [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice1, pt);
-        clearDemand_maxPrice_EH3 = x(1);
-        clearDemand_maxPrice_grid = Grid1.handlePrice(priceArray(pt), pt);
-        clearDemand_maxPrice = [clearDemand_maxPrice_grid; clearDemand_maxPrice_EH1; clearDemand_maxPrice_EH2; clearDemand_maxPrice_EH3]; % 需求为正，供给为负
-        
-        iterationNumber = 2;
-        if sum(clearDemand_minPrice) * sum(clearDemand_maxPrice) <= 0 % 说明出清点在这个区间内，有两个问题，一是等于零是否直接结束，二是如果出清点不唯一怎么办
-            % 市场出清得到出清价格，并更新预测电价序列
-            [priceArray(pt), clearDemand] = iterativeClear(minMarketPrice, maxMarketPrice, clearDemand_minPrice, clearDemand_maxPrice, ee, priceArray, gasPrice1, pt);
-        else
-            disp('Clearing point is not in the given interval.')
-        end
-        
+        end  
         number = 1;
         lamda_old = -10;
         lamda_new = 0.0; %取初始值：对预测电价没有偏差
@@ -90,16 +47,12 @@ if isGrad == 1%次梯度法求解
                     error('超出最大迭代次数');
                 end
             end
-            
+            if number>1
+                clearDemand_old = clearDemand_new; % number=2时才记录第一次
+            end
             %当前价格下的出力
             priceArray(pt) = elePrice(pt) + lamda_new;
-            if priceArray(pt) > maxMarketPrice
-                priceArray(pt) = maxMarketPrice;
-                exitFlag = 1;
-            elseif priceArray(pt) < minMarketPrice
-                priceArray(pt) = minMarketPrice;
-                exitFlag = 1;
-            end
+          
             [x,~,~,~,~] = EH1.handlePrice(priceArray, gasPrice1, pt);
             clearDemand_EH1_new = x(1);
             [x,~,~,~,~] = EH2.handlePrice(priceArray, gasPrice1, pt);
@@ -107,17 +60,21 @@ if isGrad == 1%次梯度法求解
             [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice1, pt);
             clearDemand_EH3_new = x(1);
             
-            % clearDemand_grid_new = Grid1.handlePrice(priceArray(pt), pt);
-            
-            f1 = - lamda_new;
-            lb1 = eleLimit_total(2);
-            ub1 = eleLimit_total(1);
-            [clearDemand_grid_new, value1, flag1]  = linprog(f1, [], [], [], [], lb1, ub1);
-            
-            % 存储老的clearDemand，计算新的clearDemand，并记录
-            if number>1
-                clearDemand_old = clearDemand_new; % number=2时才记录第一次
+            if lamda_new ==  0
+                clearDemand_grid_new = clearDemand_EH1_new + clearDemand_EH2_new + clearDemand_EH3_new;
+                if clearDemand_grid_new > eleLimit_total(1)
+                    clearDemand_grid_new = eleLimit_total(1);
+                end
+                if clearDemand_grid_new < eleLimit_total(2)
+                    clearDemand_grid_new = eleLimit_total(2);
+                end
+            elseif lamda_new > 0
+                clearDemand_grid_new =eleLimit_total(1);
+            else
+                clearDemand_grid_new =eleLimit_total(2);
             end
+            % 存储老的clearDemand，计算新的clearDemand，并记录
+            
             clearDemand_new = [-clearDemand_grid_new; clearDemand_EH1_new; clearDemand_EH2_new; clearDemand_EH3_new]; % 需求为正，供给为负
             clearDemand_record(number) = sum(clearDemand_new);
             
@@ -189,6 +146,11 @@ if isGrad == 1%次梯度法求解
     
 else    %二分法求解
     for pt =  1 : 24*period
+         if isDA == 0
+            EH1.predict(pt);
+            EH2.predict(pt);
+            EH3.predict(pt);
+        end 
         % 最低价格，一般都是需求大于供给
         priceArray(pt) = minMarketPrice;
         [x,~,~,~,~] = EH1.handlePrice(priceArray, gasPrice1, pt);
@@ -197,9 +159,21 @@ else    %二分法求解
         clearDemand_minPrice_EH2 = x(1);
         [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice1, pt);
         clearDemand_minPrice_EH3 = x(1);
-        clearDemand_minPrice_grid = Grid1.handlePrice(priceArray(pt), pt);
-        clearDemand_minPrice = [clearDemand_minPrice_grid; clearDemand_minPrice_EH1; clearDemand_minPrice_EH2; clearDemand_minPrice_EH3]; % 需求为正，供给为负
-        
+        if priceArray(pt) ==  elePrice(pt)
+            clearDemand_minPrice_grid = clearDemand_minPrice_EH1 + clearDemand_minPrice_EH2 + clearDemand_minPrice_EH3;
+            if clearDemand_minPrice_grid > eleLimit_total(1)
+                clearDemand_minPrice_grid = eleLimit_total(1);
+            end
+            if clearDemand_minPrice_grid < eleLimit_total(2)
+                clearDemand_minPrice_grid = eleLimit_total(2);
+            end
+        elseif  priceArray(pt )>  elePrice(pt)
+            clearDemand_minPrice_grid =eleLimit_total(1);
+        else
+            clearDemand_minPrice_grid =eleLimit_total(2);
+        end
+        clearDemand_minPrice = [-clearDemand_minPrice_grid; clearDemand_minPrice_EH1; clearDemand_minPrice_EH2; clearDemand_minPrice_EH3]; % 需求为正，供给为负
+
         % 最高价格，一般都是供给大于需求
         priceArray(pt) = maxMarketPrice;
         [x,~,~,~,~] = EH1.handlePrice(priceArray, gasPrice1, pt);
@@ -208,8 +182,20 @@ else    %二分法求解
         clearDemand_maxPrice_EH2 = x(1);
         [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice1, pt);
         clearDemand_maxPrice_EH3 = x(1);
-        clearDemand_maxPrice_grid = Grid1.handlePrice(priceArray(pt), pt);
-        clearDemand_maxPrice = [clearDemand_maxPrice_grid; clearDemand_maxPrice_EH1; clearDemand_maxPrice_EH2; clearDemand_maxPrice_EH3]; % 需求为正，供给为负
+        if priceArray(pt) ==  elePrice(pt)
+                clearDemand_maxPrice_grid = clearDemand_maxPrice_EH1 + clearDemand_maxPrice_EH2 + clearDemand_maxPrice_EH3;
+                if clearDemand_maxPrice_grid > eleLimit_total(1)
+                    clearDemand_maxPrice_grid = eleLimit_total(1);
+                end
+                if clearDemand_maxPrice_grid < eleLimit_total(2)
+                    clearDemand_maxPrice_grid = eleLimit_total(2);
+                end
+        elseif  priceArray(pt )>  elePrice(pt)
+                clearDemand_maxPrice_grid =eleLimit_total(1);
+        else
+                clearDemand_maxPrice_grid =eleLimit_total(2);
+        end
+        clearDemand_maxPrice = [-clearDemand_maxPrice_grid; clearDemand_maxPrice_EH1; clearDemand_maxPrice_EH2; clearDemand_maxPrice_EH3]; % 需求为正，供给为负
         
         iterationNumber = 2;
         if sum(clearDemand_minPrice) * sum(clearDemand_maxPrice) <= 0 % 说明出清点在这个区间内，有两个问题，一是等于零是否直接结束，二是如果出清点不唯一怎么办

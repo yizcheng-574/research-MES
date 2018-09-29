@@ -25,6 +25,7 @@ para_init;
 %             all_temporal;
 %         end
         %单时段滚动求解
+        isGrad = 0;%1-次梯度法 0-二分法
         isDA = 0;
         single_temporal;
         isCentral = 0;

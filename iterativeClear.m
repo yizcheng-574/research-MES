@@ -1,6 +1,6 @@
 function [clearPrice, clearDemand] = iterativeClear(price_min, price_max, clearDemand_minPrice, clearDemand_maxPrice, ee, priceArray, gasPrice1, t_current)
 
-    global Grid1 EH1 EH2 EH3 minMarketPrice maxMarketPrice iterationNumber
+    global Grid1 EH1 EH2 EH3 minMarketPrice maxMarketPrice iterationNumber elePrice eleLimit_total
     
     price_medium = (price_min + price_max)/2;
     
@@ -11,9 +11,20 @@ function [clearPrice, clearDemand] = iterativeClear(price_min, price_max, clearD
     clearDemand_medium_EH2 = x(1);
     [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice1, t_current);
     clearDemand_medium_EH3 = x(1);
-%     clearDemand_medium_grid = Grid1.getClearDemand(priceArray(t_current), t_current);
-    clearDemand_medium_grid = Grid1.handlePrice(priceArray(t_current), t_current);
-    clearDemand_mediumPrice = [clearDemand_medium_grid; clearDemand_medium_EH1; clearDemand_medium_EH2; clearDemand_medium_EH3]; %需求为正，供给为负
+    if priceArray(t_current) ==  elePrice(t_current)
+        clearDemand_medium_grid = clearDemand_mediumPrice_EH1(i) + clearDemand_mediumPrice_EH2(i) + clearDemand_mediumPrice_EH3(i);
+        if clearDemand_medium_grid > eleLimit_total(1)
+            clearDemand_medium_grid = eleLimit_total(1);
+        end
+        if clearDemand_medium_grid < eleLimit_total(2)
+            clearDemand_medium_grid = eleLimit_total(2);
+        end
+    elseif  priceArray(t_current)>  elePrice(t_current)
+        clearDemand_medium_grid =eleLimit_total(1);
+    else
+        clearDemand_medium_grid =eleLimit_total(2);
+    end
+    clearDemand_mediumPrice = [-clearDemand_medium_grid; clearDemand_medium_EH1; clearDemand_medium_EH2; clearDemand_medium_EH3]; %需求为正，供给为负
     
     iterationNumber = iterationNumber + 1;
     
@@ -39,9 +50,9 @@ function [clearPrice, clearDemand] = iterativeClear(price_min, price_max, clearD
             end
             
             clearDemand = zeros(length(clearDemand_minPrice) ,1);
-            for i=1:length(clearDemand_minPrice)
-                slope = (clearDemand_minPrice(i) - clearDemand_mediumPrice(i)) / (price_min - price_medium);
-                clearDemand(i) = clearDemand_minPrice(i) + (clearPrice - price_min) * slope;
+            for ii=1:length(clearDemand_minPrice)
+                slope = (clearDemand_minPrice(ii) - clearDemand_mediumPrice(ii)) / (price_min - price_medium);
+                clearDemand(ii) = clearDemand_minPrice(ii) + (clearPrice - price_min) * slope;
             end
             
         end
@@ -67,9 +78,9 @@ function [clearPrice, clearDemand] = iterativeClear(price_min, price_max, clearD
             end
             
             clearDemand = zeros(length(clearDemand_mediumPrice) ,1);
-            for i=1:length(clearDemand_mediumPrice)
-                slope = (clearDemand_mediumPrice(i) - clearDemand_maxPrice(i)) / (price_medium - price_max);
-                clearDemand(i) = clearDemand_mediumPrice(i) + (clearPrice - price_medium) * slope;
+            for ii=1:length(clearDemand_mediumPrice)
+                slope = (clearDemand_mediumPrice(ii) - clearDemand_maxPrice(ii)) / (price_medium - price_max);
+                clearDemand(ii) = clearDemand_mediumPrice(ii) + (clearPrice - price_medium) * slope;
             end
             
         end

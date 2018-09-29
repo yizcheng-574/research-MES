@@ -561,8 +561,7 @@ classdef EH_local_170828_v3 < handle
                 ub(time*6+i, 1) = obj.HS_Hmax;
                 ub(time*7+i, 1) = obj.Le_drP_rate;
                 ub(time*8+i, 1) = obj.Lh_drP_rate;
-%                 ub(time*7+i, 1) = Ele_max;
-%                 ub(time*8+i, 1) = 1e4;
+
             end
             for i = 1 : time
                 lb(i, 1) = obj.Ele_min;
@@ -670,9 +669,7 @@ classdef EH_local_170828_v3 < handle
             beq=[beq_Edr; beq_Hdr;beq_Hbus';beq_ES; beq_HS;];
             A=[Aeq_Ebus;      A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
             b=[beq_Ebus';        b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
-%              A=[Aeq_Ebus;        A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
-%             b=[beq_Ebus';        b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
-%        
+
            % 需要额外增加一个购电量的上、下限约束
             A_eleLimit_total = zeros(time, var);
             for i=1:time

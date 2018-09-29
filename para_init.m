@@ -5,7 +5,7 @@ close all
 % 主程序
 % 20180309 v3 重新改回1小时，可以再进一步加大预测误差，风光的标准差分开，数据更贴近真实
 
-global period off_grid EH1 EH2 EH3 Grid1 IESNUMBER
+global period off_grid EH1 EH2 EH3 Grid1 IESNUMBER eleLimit_total
 period = 60 / 60; % 分母是时间间隔
 
 if period == 1
@@ -23,9 +23,9 @@ elseif period == 4 % 只有174家公司了
 end
 load '../gridPriceRecord'
 Le_max = [2 , 2.3 , 1.5] * 1000;
-Le_dr_rate = [0.1, 0.2, 0.4];
+Le_dr_rate = [0.3, 0.2, 0.1];
 Lh_max = [1 , 2 , 2] * 1000;
-Lh_dr_rate = [0.2, 0.3, 0.3];
+Lh_dr_rate = [0.4, 0.3, 0.2];
 solar_max = [1 , 0.1 , 0.5] * 1000;
 wind_max = [0.3 , 1 , 0.1] * 1000;
 % IES1 工业区，电热负荷都比较平，白天稍高，热大于电，负荷型
@@ -115,13 +115,13 @@ gasLimit3 = 1e6;
 
 %CHP的参数
 CHP1_para = [0.30, 0.42, 1400, 0]; % CHP_GE_eff_in, CHP_GH_eff_in, CHP_Prate_in, CHP_Pmin_Rate_in
-CHP2_para = [0.35, 0.45, 1, 0];
+CHP2_para = [0.35, 0.45, 1200, 0];
 CHP3_para = [0.28, 0.56, 1200, 0];
 
 %锅炉
 Boiler1_para = [0.90; Lh_max(1)/0.9]; % Boiler_eff_in, Boiler_Prate_in
 Boiler2_para = [0.90; Lh_max(2)/0.9];
-Boiler3_para = [0.90; Lh_max(3)/0.9];
+Boiler3_para = [0.90; Lh_max(3)*2];
 
 %电储能和热储能
 % ES_totalC_in, ES_maxSOC_in, ES_minSOC_in, ES_currentSOC_in, ES_targetSOC_in, ES_chargeTime, ES_eff_in
