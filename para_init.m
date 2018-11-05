@@ -138,7 +138,7 @@ ES1_para = [1, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
 ES2_para = [1000, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
 ES3_para = [2000, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
 % HS_totalC_in, HS_maxSOC_in, HS_minSOC_in, HS_currentSOC_in, HS_targetSOC_in, HS_chargeTime, HS_eff_in
-HS1_para = [2000, 0.9, 0.1, 0.6, 0.5, 5, 0.9];
+HS1_para = [1, 0.9, 0.1, 0.6, 0.5, 5, 0.9];
 HS2_para = [1000, 0.9, 0.1, 0.6, 0.5, 5, 0.9];
 HS3_para = [1, 0.9, 0.1, 0.5, 0.6, 0.5, 0.9];
 

@@ -145,12 +145,27 @@ if isGrad == 1%次梯度法求解
     end
     
 else    %二分法求解
+    dflag = 0;
     for pt =  1 : 24*period
          if isDA == 0
             EH1.predict(pt);
             EH2.predict(pt);
             EH3.predict(pt);
-        end 
+         end 
+         if dflag == 1
+            [demand,price] = IESdemand_curve(priceArray, pt);
+            figure;
+            hold on;
+            for ies_no = 1 : IESNUMBER
+                plot(price,demand(ies_no,:),'LineWidth',1.5);
+            end
+            plot(price,sum(demand),'LineWidth',1.5);
+            xlabel('电价')
+%             legend('IES1','IES2','IES3','总')
+            title([pt ,'时刻投标曲线']);
+            ylabel('需求')
+         end
+        
         % 最低价格，一般都是需求大于供给
         priceArray(pt) = minMarketPrice;
         [x,~,~,~,~] = EH1.handlePrice(priceArray, gasPrice1, pt);

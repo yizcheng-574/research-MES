@@ -287,9 +287,10 @@ for IES_no = 1 : IESNUMBER
     set(AX(1),'YTick',-1:0.5:2.5)
     set(AX(2),'ylim',[0,1])
     set(AX(2),'YTick',0.1:0.2:1)
-    
-    H10 = legend([H1(1),H1(2),H1(3),H1(4),H2,H4(1),H4(2)], '支线购电','CHP','可再生能源','ESS放电','电储能SOC','总基荷','总负荷','Location','northoutside','Orientation','horizontal');
-    set(H10,'Box','off');
+    if IES_no == 1
+        H10 = legend([H1(1),H1(2),H1(3),H1(4),H2,H4(1),H4(2)], '支线购电','CHP','可再生能源','ESS放电','电储能SOC','总基荷','总负荷','Location','northoutside','Orientation','horizontal');
+        set(H10,'Box','off');
+    end
     set(gcf,'Position',[0 0 550 500]);
     
 end
@@ -329,8 +330,10 @@ for IES_no = 1 : IESNUMBER
     set(AX(1),'YTick',-1:0.5:2)
     set(AX(2),'ylim',[0,1])
     set(AX(2),'YTick',0.1:0.2:1)
-    
-    H10 = legend([H1(1),H1(2),H1(3),H2,H4(1),H4(2)], 'CHP','GF','ThSS放电','热储能SOC','总基荷','总负荷','Location','northoutside','Orientation','horizontal');
+    if IES_no == 1
+        H10 = legend([H1(1),H1(2),H1(3),H2,H4(1),H4(2)], 'CHP','GF','ThSS放电','热储能SOC','总基荷','总负荷','Location','northoutside','Orientation','horizontal');
+        set(H10,'Box','off');
+    end
     set(H10,'Box','off');
     set(gcf,'Position',[0 0 500 500]);
 end
@@ -551,5 +554,28 @@ ylabel('电价(元/kWh)')
 % set(get(gca,'YLabel'),'FontSize',14);
 set(gcf,'Position',[0 0 400 300]);
 %}
+figure
+hold on; 
 
+    H1= plot(price,demand);
+    H3= plot(price,demandNoThss);
+    H4= plot(price,demandNoSS);hold on;
+    H2= plot(price,demandNoESS);hold on;
 
+     set(H1(1),'Color','black','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
+     set(H1(2),'Color',yellowgreen,'LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
+     set(H1(3),'Color',indianred, 'LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
+     set(H2(1),'Color',gold, 'LineStyle','-.','LineWidth',1.5);
+     set(H2(2),'Color',yellowgreen, 'LineStyle','-.','LineWidth',1.5);
+     set(H2(3),'Color',indianred, 'LineStyle','-.','LineWidth',1.5);
+     set(H3(1),'Color','black','LineWidth',1.5);
+     set(H3(2),'Color',yellowgreen,'LineWidth',1.5);
+     set(H3(3),'Color',indianred,'LineWidth',1.5);
+     set(H4(1),'Color','black', 'LineStyle',':','LineWidth',1.5,'Marker', '*', 'MarkerSize', 5);
+     set(H4(2),'Color',yellowgreen, 'LineStyle',':','LineWidth',1.5,'Marker', '*', 'MarkerSize', 5);
+     set(H4(3),'Color',indianred, 'LineStyle',':','LineWidth',1.5,'Marker', '*', 'MarkerSize', 5);
+
+ xlabel('电价')
+ ylabel('需求')
+ H10 = legend([H1(1),H2(1),H3(1),H4(1),H1(2),H1(3)], 'IES1', 'IES1 w/o ESS','IES1 w/o ThSS','IES1 w/o SS','IES2', 'IES3','Location','northoutside','Orientation','horizontal');
+set(H10,'Box','off');
