@@ -39,8 +39,8 @@ for IES_no = 1 : 3
     xlim([0,24*period])
     ylim([0,max(max(EH_Le),max(EH_Lh))/1000]);
     set(gca,'XTick',0:(24*period/4):24*period, 'XTickLabel',{'0:00','6:00','12:00','18:00','24:00'})
-    ylabel('负荷需求(MW)')
-    legend('基本电负荷','总电负荷','基本热负荷','总热负荷','Location','northoutside','Orientation','horizontal')
+    ylabel('Load(MW)')
+    legend('base electric load','total electric load','base thermal load','total thermal load','Location','northoutside','Orientation','horizontal')
     % ylabel('load / kW')
     % xlabel('time / h')
     % legend('Le','Lh','Location','northoutside','Orientation','horizontal')
@@ -54,8 +54,8 @@ for IES_no = 1 : 3
     % ylabel('RES power / kW')
     % xlabel('time / h')
     % legend('PV','WT','Location','northoutside','Orientation','horizontal')
-    ylabel('发电功率(MW)')
-    legend('光伏','风电','Location','northoutside','Orientation','horizontal')
+    ylabel('power(MW)')
+    legend('PV','wind','Location','northoutside','Orientation','horizontal')
 end
 set(gcf,'Position',[0 0 800 500]);
 
@@ -222,18 +222,18 @@ H1(1).FaceColor = dodgerblue;
 set(H2(1),'Color',firebrick, 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13)
 set(H2(2),'Color',darkblue, 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13)
 
-set(get(AX(1),'Ylabel'),'String','馈线购电功率(MW)')
-set(get(AX(2),'Ylabel'),'String','电价(元/kWh)')
+set(get(AX(1),'Ylabel'),'String','transformer power(MW)')
+set(get(AX(2),'Ylabel'),'String','electricity price(yuan/kWh)')
 % xlabel('时间(h)')
 set(AX(1),'xlim',[0,24*period+1])
 set(AX(2),'xlim',[0,24*period+1])
 set(gca,'XTick',0:(24*period/4):24*period, 'XTickLabel',{'0:00','6:00','12:00','18:00','24:00'})
 set(AX(2),'XTick',[],'XTickLabel',[])
-
+set(AX(1),'ylim',[eleLimit_total(2)/1000,eleLimit_total(1)/1000]);
 H3 = stairs(t2, ones(24*period+1, 1) .* eleLimit_total(1)/1000, 'Color',gray,'LineStyle','--','LineWidth',1);
 stairs(t2, ones(24*period+1, 1) * eleLimit_total(2)/1000, 'Color',gray,'LineStyle','--','LineWidth',1);
 
-H10 = legend([H1,H2(1),H2(2),H3(1)],'馈线功率','本地电价','主网电价','馈线功率约束');
+H10 = legend([H1,H2(1),H2(2),H3(1)],'transformer power','local price','utility price','power limits');
 set(H10,'Box','off');
 set(gcf,'Position',[0 0 400 200]);
 
@@ -276,7 +276,7 @@ for IES_no = 1 : IESNUMBER
     set(H4(1),'Color','black', 'LineStyle','-.','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
     set(H4(2),'Color','black', 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
     
-    set(get(AX(1),'Ylabel'),'String','电功率(MW)')
+    set(get(AX(1),'Ylabel'),'String','electric power(MW)')
     set(get(AX(2),'Ylabel'),'String','SOC')
     xlabel(sprintf('IES%d',IES_no))
     set(AX(1),'xlim',[0,24*period+1])
@@ -288,7 +288,7 @@ for IES_no = 1 : IESNUMBER
     set(AX(2),'ylim',[0,1])
     set(AX(2),'YTick',0.1:0.2:1)
     if IES_no == 1
-        H10 = legend([H1(1),H1(2),H1(3),H1(4),H2,H4(1),H4(2)], '支线购电','CHP','可再生能源','ESS放电','电储能SOC','总基荷','总负荷','Location','northoutside','Orientation','horizontal');
+        H10 = legend([H1(1),H1(2),H1(3),H1(4),H2,H4(1),H4(2)], 'transformer','CHP','renewable energies','EES','SOC of EES','base electric load','total electric load','Location','northoutside','Orientation','horizontal');
         set(H10,'Box','off');
     end
     set(gcf,'Position',[0 0 550 500]);
@@ -319,7 +319,7 @@ for IES_no = 1 : IESNUMBER
     set(H4(1),'Color','black', 'LineStyle','-.','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
     set(H4(2),'Color','black', 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13);
   
-    set(get(AX(1),'Ylabel'),'String','热功率(MW)')
+    set(get(AX(1),'Ylabel'),'String','thermal power(MW)')
     set(get(AX(2),'Ylabel'),'String','SOC')
     xlabel(sprintf('IES%d',IES_no))
     set(AX(1),'xlim',[0,24*period+1])
@@ -331,7 +331,7 @@ for IES_no = 1 : IESNUMBER
     set(AX(2),'ylim',[0,1])
     set(AX(2),'YTick',0.1:0.2:1)
     if IES_no == 1
-        H10 = legend([H1(1),H1(2),H1(3),H2,H4(1),H4(2)], 'CHP','GF','ThSS放电','热储能SOC','总基荷','总负荷','Location','northoutside','Orientation','horizontal');
+        H10 = legend([H1(1),H1(2),H1(3),H2,H4(1),H4(2)], 'CHP','GF','TES','SOC of TES','base thermal load','total thermal load','Location','northoutside','Orientation','horizontal');
         set(H10,'Box','off');
     end
     set(H10,'Box','off');
