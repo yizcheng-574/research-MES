@@ -1,5 +1,7 @@
         
-clc;clear;        
+clc;clear;  
+global caseType;
+caseType = 2;
 para_init;        
         off_grid = 0; % 0表示正常运行，1表示IES1离网
         clear eleLimit1  gasLimit1  EH1_Le  EH1_Lh  EH1_solarP  EH1_windP  CHP1_para  Boiler1_para  ES1_para  HS1_para EH1_Le_jing EH1_solarP_rate EH1_windP_rate EH1_Le_drP_rate EH1_Le_drP_total EH1_Lh_drP_rate EH1_Lh_drP_total

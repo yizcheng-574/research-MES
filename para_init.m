@@ -5,7 +5,7 @@ close all
 % 主程序
 % 20180309 v3 重新改回1小时，可以再进一步加大预测误差，风光的标准差分开，数据更贴近真实
 
-global period off_grid EH1 EH2 EH3 Grid1 IESNUMBER eleLimit_total
+global period off_grid EH1 EH2 EH3 Grid1 IESNUMBER eleLimit_total caseType
 period = 60 / 60; % 分母是时间间隔
 
 if period == 1
@@ -116,7 +116,12 @@ gasLimit3 = 1e6;
 %CHP的参数
 CHP1_para = [0.30, 0.42, 1400, 0]; % CHP_GE_eff_in, CHP_GH_eff_in, CHP_Prate_in, CHP_Pmin_Rate_in
 CHP2_para = [0.35, 0.45, 1200, 0];
-CHP3_para = [0.28, 0.56, 1200, 0];
+
+if caseType == 31
+    CHP3_para = [0.28, 0.56, 1, 0];
+else
+    CHP3_para = [0.28, 0.56, 1200, 0];
+end
 
 %锅炉
 Boiler1_para = [0.90; Lh_max(1)/0.9]; % Boiler_eff_in, Boiler_Prate_in
@@ -134,7 +139,11 @@ Boiler3_para = [0.90; Lh_max(3)/0.9];
         HS2_para = [1500, 0.9, 0.1, 0.5, 0.5, 5, 0.9];
         HS3_para = [10, 0.9, 0.1, 0.5, 0.5, 5, 0.9];
 %}
-ES1_para = [1, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
+if caseType == 32
+    ES1_para = [2000, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
+else
+    ES1_para = [1, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
+end
 ES2_para = [1000, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
 ES3_para = [2000, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
 % HS_totalC_in, HS_maxSOC_in, HS_minSOC_in, HS_currentSOC_in, HS_targetSOC_in, HS_chargeTime, HS_eff_in
