@@ -162,14 +162,9 @@ if caseType ~=32
     %}
     % 计算
     %计算总成本 按网价计算
-    totalCost1 = ( sum(result_Ele(:,1) .* elePrice) + sum(result_Gas(:,1) .* gasPrice1) ) / period;
-    totalCost2 = ( sum(result_Ele(:,2) .* elePrice) + sum(result_Gas(:,2) .* gasPrice1) ) / period;
-    totalCost3 = ( sum(result_Ele(:,3) .* elePrice) + sum(result_Gas(:,3) .* gasPrice1) ) / period;
-    
-    disp(['IES1总成本为 ',num2str(totalCost1),' 元'])
-    disp(['IES2总成本为 ',num2str(totalCost2),' 元'])
-    disp(['IES3总成本为 ',num2str(totalCost3),' 元'])
-    disp(['总成本为 ',num2str(totalCost1 + totalCost2 + totalCost3),' 元'])
+    totalCost = (result_Ele' *  elePrice + sum(result_Gas)' * gasPrice1) / period;
+       
+    disp(['总成本为 ', sum(totalCost),' 元'])
     
     %计算弃风光率
     % waste_power1 = sum(result_balance_P(:,1)) / sum(EH1_solarP + EH1_windP) * 100; % 分子分母的period抵消了
@@ -227,8 +222,8 @@ if caseType ~=32
     set(H2(1),'Color',firebrick, 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13)
     set(H2(2),'Color',darkblue, 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13)
     ylabel('electricity price(yuan/kWh)');
-    ylim([0.1,1.2]);
-    yticks(0.1:0.3:1.2);
+    ylim([0.1, 1.2]);
+    yticks(0.1 : 0.3 : 1.2);
     %xlabel('时间(h)')
     xlim([0, 24 * period + 1]);
     xticks(0 : (24*period/4):24*period);
