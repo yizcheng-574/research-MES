@@ -135,7 +135,9 @@ if caseType ~=32
     
     yyaxis right;
     H2 = plot(t1, [c4_clearingPrice, elePrice]);
-    le = legend([H1,H2(1),H2(2),H3(1)],'transformer power','hourly clearing price','utility price','power limits'); set(le,'Box','off');
+    le = legend([H1,H2(1),H2(2),H3(1)],...
+        'transformer power','hourly clearing price','utility price','power limits');...
+    set(le,'Box','off');
     set(H2(1),'Color',firebrick, 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13)
     set(H2(2),'Color',darkblue, 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13)
     ylabel('electricity price(yuan/kWh)');
@@ -369,7 +371,8 @@ H2(1).FaceColor = H1(1).EdgeColor;
 H2(2).EdgeColor = brown;
 H2(2).FaceColor = H1(2).EdgeColor;
 le = legend([H3(1), H3(2), H3(3), H1(1), H1(2)], ...
-    'MPPT output', 'optimal power of (P2)','power after transformation', 'EES power of (P2)', 'EES power after transformation',...
+    'MPPT output', 'optimal power of (P2)','power after transformation', ...
+    'EES power of (P2)', 'EES power after transformation',...
      'Location','northoutside','Orientation','vertical');
 set(le,'Box','off');
 legend('show');
