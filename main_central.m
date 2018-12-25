@@ -2,6 +2,7 @@
 clc;clear;
 para_init;
 isCentral = 2;
+caseType = 2;
 %1 全时段集中式优化
 %2 集中式滚动优化
 %0 分布式滚动优化

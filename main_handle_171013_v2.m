@@ -177,7 +177,6 @@ if caseType ~=32
         eval(['Eload_base = EH', num2str(IES_no),'_Le ./1000;']);
         
         yyaxis left;
-        
         H1 = stackedbar(t1, bar_positive);
         H1(1).EdgeColor = dodgerblue;
         H1(1).FaceColor = H1(1).EdgeColor;
@@ -197,7 +196,7 @@ if caseType ~=32
         H4 = plot(t1,[Eload_base, Eload]);
         set(H4(1), 'Color', 'black', 'LineStyle', '-.', 'LineWidth', 1.5, 'Marker', '.', 'MarkerSize', 13);
         set(H4(2), 'Color', 'black', 'LineStyle', '-', 'LineWidth', 1.5, 'Marker', '.', 'MarkerSize', 13);
-        
+
         ylabel('electric power(MW)');
         ylim([-1,2.5]);
         yticks(-1:0.5:2.5);
@@ -320,6 +319,65 @@ figure
     set(gcf,'Position',[0 0 500 200]);
 
 end
+
+IES_no = 2;
+%原始弃风
+eval(['EH_Le_total = EH',num2str(IES_no),'_Le + EH',num2str(IES_no),'_Edr;']);
+P_wind = - result_Ele_loss(:, IES_no) -  result_CHP_power(:, IES_no)...
+   - result_ES_discharge(:, IES_no) + result_ES_charge(:, IES_no) + EH_Le_total ;
+%风功率曲线
+eval(['P_renewable = EH', num2str(IES_no), '_windP + EH', num2str(IES_no),'_solarP;']);
+%原始充电
+P_charge = result_ES_charge(:, IES_no);
+%原始放电
+P_discharge = result_ES_discharge(:, IES_no);
+%delta_S
+delta_S = P_charge * 0.9 - P_discharge / 0.9;
+%修正后的充电
+%修正后的放电
+P_charge_rev = zeros(24, 1);
+P_discharge_rev = zeros(24, 1);
+for i = 1 : 24
+    if delta_S(i) > 0
+        P_charge_rev(i) = delta_S(i) / 0.9;
+    elseif delta_S(i) < 0
+        P_discharge_rev(i) = - delta_S(i) * 0.9;
+    end
+end
+%修正后的弃风
+P_wind_rev = - result_Ele_loss(:, IES_no) -  result_CHP_power(:, IES_no)...
+   - P_discharge_rev + P_charge_rev + EH_Le_total ;
+figure; hold on;
+w = 2;
+yyaxis left;
+H3(1) = stairs(t_1, appendStairArray(P_renewable) / 1000, 'DisplayName', 'MPPT output', 'LineWidth', w);
+H3(2) = stairs(t_1, appendStairArray(P_wind) / 1000, 'DisplayName', 'power of (P2)', 'LineWidth', w);
+H3(3) = stairs(t_1, appendStairArray(P_wind_rev) / 1000, 'DisplayName', 'power after transformation', 'LineWidth', w);
+ylabel('renewable power(MW)');
+
+yyaxis right;
+H1 = bar(t, -[P_charge P_charge_rev]);
+H2 = bar(t, [P_discharge, P_discharge_rev]);
+ylabel('EES power(MW)');
+
+H1(1).EdgeColor = gray;
+H1(1).FaceColor = H1(1).EdgeColor;
+H1(2).EdgeColor = brown;
+H1(2).FaceColor = H1(2).EdgeColor;
+H2(1).EdgeColor = gray;
+H2(1).FaceColor = H1(1).EdgeColor;
+H2(2).EdgeColor = brown;
+H2(2).FaceColor = H1(2).EdgeColor;
+le = legend([H3(1), H3(2), H3(3), H1(1), H1(2)], ...
+    'MPPT output', 'optimal power of (P2)','power after transformation', 'EES power of (P2)', 'EES power after transformation',...
+     'Location','northoutside','Orientation','vertical');
+set(le,'Box','off');
+legend('show');
+xlabel(sprintf('IES%d', IES_no));
+xlim([0, 24 * period + 1]);
+xticks(0:(24 * period / 4) : 24 * period);
+xticklabels({ '0:00','6:00','12:00','18:00','24:00' });
+set(gcf,'Position',[0 0 400 200]);
 
 function [ result ] = appendStairArray(array)%为stairs作图的数组增加最后一列
 [row, col] = size(array);
