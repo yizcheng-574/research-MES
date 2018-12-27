@@ -167,9 +167,9 @@ EH1_Le_drP_rate = Le_max(1) * Le_dr_rate(1);
 EH2_Le_drP_rate = Le_max(2) * Le_dr_rate(2);
 EH3_Le_drP_rate = Le_max(3) * Le_dr_rate(3);
 %各IES总可平移负荷电量
-EH1_Le_drP_total = EH1_Le_drP_rate * 10;
-EH2_Le_drP_total = EH2_Le_drP_rate * 10;
-EH3_Le_drP_total = EH3_Le_drP_rate * 10;
+EH1_Le_drP_total = EH1_Le_drP_rate * 5;
+EH2_Le_drP_total = EH2_Le_drP_rate * 5;
+EH3_Le_drP_total = EH3_Le_drP_rate * 5;
 
 %热
 %各IES各时段最大可平移负荷功率
@@ -177,12 +177,12 @@ EH1_Lh_drP_rate = Lh_max(1) * Lh_dr_rate(1);
 EH2_Lh_drP_rate = Lh_max(2) * Lh_dr_rate(2);
 EH3_Lh_drP_rate = Lh_max(3) * Lh_dr_rate(3);
 %各IES总可平移负荷电量
-EH1_Lh_drP_total = EH1_Lh_drP_rate * 10;
-EH2_Lh_drP_total = EH2_Lh_drP_rate * 10;
-EH3_Lh_drP_total = EH3_Lh_drP_rate * 10;
+EH1_Lh_drP_total = EH1_Lh_drP_rate * 5;
+EH2_Lh_drP_total = EH2_Lh_drP_rate * 5;
+EH3_Lh_drP_total = EH3_Lh_drP_rate * 5;
 
 singleLimit = Le_max * 1.2;
-totalLimit = 1.5 * mean(EH1_Le_jing) + mean(EH2_Le_jing) + mean(EH3_Le_jing)+...
+totalLimit = 2 * mean(EH1_Le_jing) + mean(EH2_Le_jing) + mean(EH3_Le_jing)+...
     (EH1_Le_drP_total +EH1_Le_drP_total + EH1_Le_drP_total )/(24 * period) ;
 reverseRate = 4;
 % 支线: 下级向上级购电、售电约束，再加一个线损率5-7%
