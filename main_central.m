@@ -1,8 +1,7 @@
 % 集中式优化：单次
-clc;clear;
+caseType = 2;
 para_init;
 isCentral = 2;
-caseType = 2;
 %1 全时段集中式优化
 %2 集中式滚动优化
 %0 分布式滚动优化
@@ -48,43 +47,19 @@ for pt = 1: temporal
     % 需要额外增加一个购电量的上、下限约束
     A2 = [EH1_A_eleLimit_total, EH2_A_eleLimit_total, EH2_A_eleLimit_total];
     b2 = ones(time, 1) .* eleLimit_total(1);
-    b2_sale = ones(time, 1) .* eleLimit_total(2);
+%     b2_sale = ones(time, 1) .* eleLimit_total(2);
+    b2_sale = zeros(time, 1);
     A = [A1; A2; -A2];
     b = [b1; b2; -b2_sale];
     
-    
     [x,fval,exitflag,output,lambda] = linprog(f,A,b,Aeq,beq,lb,ub);
+    
     if isCentral == 2
         for IES_no = 1 : IESNUMBER
             eval(['EH',num2str(IES_no),'.update_central(x, pt, IES_no);']);
         end
     end
 end
-if isCentral == 1 
-    for IES_no = 1 : number
-        result_Ele(:, IES_no) = x(1 + (IES_no - 1)* var :time  + (IES_no - 1)* var);
-        result_CHP_G(:,IES_no) = x(time + 1 + (IES_no - 1)* var :time * 2 +  (IES_no - 1)* var);
-        result_Boiler_G(:,IES_no) = x(time * 2 + 1 + (IES_no - 1)* var :time * 3 +  (IES_no - 1)* var);
-        result_ES_discharge(:,IES_no) = x(time * 3 + 1 + (IES_no - 1)* var :time * 4 +  (IES_no - 1)* var);
-        result_ES_charge(:,IES_no) = x(time * 4 + 1 + (IES_no - 1)* var :time * 5 +  (IES_no - 1)* var);
-        result_HS_discharge(:,IES_no) = x(time * 5 + 1 + (IES_no - 1)* var :time * 6 +  (IES_no - 1)* var);
-        result_HS_charge(:,IES_no) = x(time * 6 + 1 + (IES_no - 1)* var :time * 7 +  (IES_no - 1)* var);
-        eval(['EH',num2str(IES_no), '_Edr =  x(time * 7 + 1 + (IES_no - 1)* var :time * 8 +  (IES_no - 1)* var);']);
-        eval(['EH',num2str(IES_no), '_Hdr =  x(time * 8 + 1 + (IES_no - 1)* var :time * 9 +  (IES_no - 1)* var);']);
-    end
-    for IES_no = 1 : number
-        eval(['ES_para = ES',num2str(IES_no),'_para;']);
-        eval(['HS_para = HS',num2str(IES_no),'_para;']);
-        for pt = 1 : time
-            result_ES_SOC(pt + 1, IES_no) = result_ES_SOC(pt, IES_no) - result_ES_discharge(pt, IES_no) / ES_para(7) / ES_para(1)...
-                + result_ES_charge(pt, IES_no) * ES_para(7) / ES_para(1);
-            result_HS_SOC(pt + 1, IES_no) = result_HS_SOC(pt, IES_no) - result_HS_discharge(pt, IES_no) / HS_para(7) / HS_para(1)...
-                + result_HS_charge(pt, IES_no) * HS_para(7) / HS_para(1);
-        end
-    end
-elseif isCentral == 2
-    [result_Ele(:,1), result_CHP_G(:,1), result_Boiler_G(:,1), result_ES_discharge(:,1), result_ES_charge(:,1), result_HS_discharge(:,1), result_HS_charge(:,1), result_ES_SOC(:,1), result_HS_SOC(:,1), EH1_Le, EH1_Lh, EH1_solarP, EH1_windP, EH1_Edr, EH1_Hdr] = EH1.getResult;
-    [result_Ele(:,2), result_CHP_G(:,2), result_Boiler_G(:,2), result_ES_discharge(:,2), result_ES_charge(:,2), result_HS_discharge(:,2), result_HS_charge(:,2), result_ES_SOC(:,2), result_HS_SOC(:,2), EH2_Le, EH2_Lh, EH2_solarP, EH2_windP, EH2_Edr, EH2_Hdr] = EH2.getResult;
-    [result_Ele(:,3), result_CHP_G(:,3), result_Boiler_G(:,3), result_ES_discharge(:,3), result_ES_charge(:,3), result_HS_discharge(:,3), result_HS_charge(:,3), result_ES_SOC(:,3), result_HS_SOC(:,3), EH3_Le, EH3_Lh, EH3_solarP, EH3_windP, EH3_Edr, EH3_Hdr] = EH3.getResult;
-end
-main_handle_171013_v2
+[result_Ele(:,1), result_CHP_G(:,1), result_Boiler_G(:,1), result_ES_discharge(:,1), result_ES_charge(:,1), result_HS_discharge(:,1), result_HS_charge(:,1), result_ES_SOC(:,1), result_HS_SOC(:,1), result_EH_Le(:, 1), result_EH_Lh(:,1), result_EH_solarP(:,1), result_EH_windP(:,1), result_EH_Edr(:,1), result_EH_Hdr(:,1)] = EH1.getResult;
+[result_Ele(:,2), result_CHP_G(:,2), result_Boiler_G(:,2), result_ES_discharge(:,2), result_ES_charge(:,2), result_HS_discharge(:,2), result_HS_charge(:,2), result_ES_SOC(:,2), result_HS_SOC(:,2), result_EH_Le(:, 2), result_EH_Lh(:,2), result_EH_solarP(:,2), result_EH_windP(:,2), result_EH_Edr(:,2), result_EH_Hdr(:,2)] = EH2.getResult;
+[result_Ele(:,3), result_CHP_G(:,3), result_Boiler_G(:,3), result_ES_discharge(:,3), result_ES_charge(:,3), result_HS_discharge(:,3), result_HS_charge(:,3), result_ES_SOC(:,3), result_HS_SOC(:,3), result_EH_Le(:, 3), result_EH_Lh(:,3), result_EH_solarP(:,3), result_EH_windP(:,3), result_EH_Edr(:,3), result_EH_Hdr(:,3)] = EH3.getResult;

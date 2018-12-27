@@ -35,12 +35,13 @@ if caseType ~=32
     
     for IES_no = 1 : 3
         t_1 = 0 : 24;
-        eval(['EH_Le_base = EH',num2str(IES_no),'_Le;']);
-        eval(['EH_Lh_base = EH',num2str(IES_no),'_Lh;']);
-        eval(['EH_solarP = EH',num2str(IES_no),'_solarP;']);
-        eval(['EH_windP = EH',num2str(IES_no),'_windP;']);
-        eval(['EH_Le = EH_Le_base + EH',num2str(IES_no),'_Edr;']);
-        eval(['EH_Lh = EH_Lh_base + EH',num2str(IES_no),'_Hdr;']);
+        EH_Le_base = result_EH_Le(:, IES_no);
+
+        EH_Lh_base = result_EH_Lh(:, IES_no);
+        EH_solarP = result_EH_solarP(:, IES_no);
+        EH_windP = result_EH_windP(:, IES_no);
+        EH_Le = EH_Le_base + result_EH_Edr(:, IES_no);
+        EH_Lh = EH_Lh_base + result_EH_Hdr(:, IES_no);
         subplot(3 , 2 , (IES_no - 1) * 2 + 1 )
         hold on;
         stairs(t_1, appendStairArray(EH_Le_base) / 1000, 'Color', 'b', 'LineStyle', '-.', 'LineWidth', w)
@@ -102,9 +103,8 @@ if caseType ~=32
     % 计算
     %计算总成本 按网价计算
     totalCost = (result_Ele' *  elePrice + sum(result_Gas)' * gasPrice1) / period;
-       
-    disp(['总成本为 ', sum(totalCost),' 元'])
-      
+    totalCost
+    sum(totalCost)
     % --------------------------------------绘图--------------------------------------
     t1 = 1 : 1 : 24 * period;
     t2 = 0 : 1 : 24 * period;
@@ -170,13 +170,13 @@ if caseType ~=32
     for IES_no = st : en
         subplot(en - st + 1, 1, fig)
         hold on
-        eval(['bar_positive = [result_Ele_loss_positive(:,IES_no), result_CHP_power(:,IES_no), EH',...
-            num2str(IES_no),'_solarP + EH', num2str(IES_no), '_windP, result_ES_discharge(:,IES_no)] ./ 1000;']);
+        bar_positive = [result_Ele_loss_positive(:,IES_no), result_CHP_power(:,IES_no), ...
+            result_EH_solarP(:, IES_no) + result_EH_windP(:, IES_no), result_ES_discharge(:,IES_no)] ./ 1000;
         bar_negtive = [result_Ele_loss_negtive(:,IES_no), -result_ES_charge(:,IES_no)] ./1000;
-        eval(['Egen = (result_Ele_loss(:,IES_no) + result_CHP_power(:,IES_no) + EH', num2str(IES_no),...
-            '_solarP + EH', num2str(IES_no),'_windP + result_ES_discharge(:,IES_no) - result_ES_charge(:,IES_no)) ./1000 ;']);
-        eval(['Eload = (EH', num2str(IES_no),'_Le + EH', num2str(IES_no),'_Edr) ./1000;']);
-        eval(['Eload_base = EH', num2str(IES_no),'_Le ./1000;']);
+        Egen = (result_Ele_loss(:,IES_no) + result_CHP_power(:,IES_no) + result_EH_solarP(:, IES_no) + result_EH_windP(:, IES_no)...
+            + result_ES_discharge(:,IES_no) - result_ES_charge(:,IES_no)) ./1000 ;
+        Eload = (result_EH_Le(:, IES_no) + result_EH_Edr(:, IES_no)) ./1000;
+        Eload_base = result_EH_Le(:, IES_no) ./1000;
         
         yyaxis left;
         H1 = stackedbar(t1, bar_positive);
@@ -242,8 +242,8 @@ if caseType ~=32
         bar_negtive = -result_HS_charge(:,IES_no) ./1000;
         Hgen = (result_CHP_heat(:,IES_no) + result_Boiler_heat(:,IES_no) + result_HS_discharge(:,IES_no)...
             - result_HS_charge(:,IES_no)) ./1000;
-        eval(['Hload = (EH', num2str(IES_no),'.Lh_real + EH', num2str(IES_no),'_Hdr) ./1000;']);
-        eval(['Hload_base = EH', num2str(IES_no),'.Lh_real ./1000;']);
+        Hload = (result_EH_Lh(:, IES_no) + result_EH_Hdr(:, IES_no)) ./1000;
+        Hload_base = result_EH_Lh(:, IES_no) ./1000;
         
         yyaxis left;
         H1 = stackedbar(t1, bar_positive);
@@ -322,71 +322,3 @@ figure
 
 end
 
-IES_no = 2;
-%原始弃风
-eval(['EH_Le_total = EH',num2str(IES_no),'_Le + EH',num2str(IES_no),'_Edr;']);
-P_wind = - result_Ele_loss(:, IES_no) -  result_CHP_power(:, IES_no)...
-   - result_ES_discharge(:, IES_no) + result_ES_charge(:, IES_no) + EH_Le_total ;
-%风功率曲线
-eval(['P_renewable = EH', num2str(IES_no), '_windP + EH', num2str(IES_no),'_solarP;']);
-%原始充电
-P_charge = result_ES_charge(:, IES_no);
-%原始放电
-P_discharge = result_ES_discharge(:, IES_no);
-%delta_S
-delta_S = P_charge * 0.9 - P_discharge / 0.9;
-%修正后的充电
-%修正后的放电
-P_charge_rev = zeros(24, 1);
-P_discharge_rev = zeros(24, 1);
-for i = 1 : 24
-    if delta_S(i) > 0
-        P_charge_rev(i) = delta_S(i) / 0.9;
-    elseif delta_S(i) < 0
-        P_discharge_rev(i) = - delta_S(i) * 0.9;
-    end
-end
-%修正后的弃风
-P_wind_rev = - result_Ele_loss(:, IES_no) -  result_CHP_power(:, IES_no)...
-   - P_discharge_rev + P_charge_rev + EH_Le_total ;
-figure; hold on;
-w = 2;
-yyaxis left;
-H3(1) = stairs(t_1, appendStairArray(P_renewable) / 1000, 'DisplayName', 'MPPT output', 'LineWidth', w);
-H3(2) = stairs(t_1, appendStairArray(P_wind) / 1000, 'DisplayName', 'power of (P2)', 'LineWidth', w);
-H3(3) = stairs(t_1, appendStairArray(P_wind_rev) / 1000, 'DisplayName', 'power after transformation', 'LineWidth', w);
-ylabel('renewable power(MW)');
-
-yyaxis right;
-H1 = bar(t, -[P_charge P_charge_rev]);
-H2 = bar(t, [P_discharge, P_discharge_rev]);
-ylabel('EES power(MW)');
-
-H1(1).EdgeColor = gray;
-H1(1).FaceColor = H1(1).EdgeColor;
-H1(2).EdgeColor = brown;
-H1(2).FaceColor = H1(2).EdgeColor;
-H2(1).EdgeColor = gray;
-H2(1).FaceColor = H1(1).EdgeColor;
-H2(2).EdgeColor = brown;
-H2(2).FaceColor = H1(2).EdgeColor;
-le = legend([H3(1), H3(2), H3(3), H1(1), H1(2)], ...
-    'MPPT output', 'optimal power of (P2)','power after transformation', ...
-    'EES power of (P2)', 'EES power after transformation',...
-     'Location','northoutside','Orientation','vertical');
-set(le,'Box','off');
-legend('show');
-xlabel(sprintf('IES%d', IES_no));
-xlim([0, 24 * period + 1]);
-xticks(0:(24 * period / 4) : 24 * period);
-xticklabels({ '0:00','6:00','12:00','18:00','24:00' });
-set(gcf,'Position',[0 0 400 200]);
-
-function [ result ] = appendStairArray(array)%为stairs作图的数组增加最后一列
-[row, col] = size(array);
-if col > 1 %行向量
-    result = [array, array(end)];
-else
-    result = [array; array(end)];
-end
-end
