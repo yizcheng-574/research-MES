@@ -5,7 +5,7 @@ isCentral = 2;
 %1 全时段集中式优化
 %2 集中式滚动优化
 %0 分布式滚动优化
-global period
+global period couldExport
 if isCentral == 2 
     temporal = 24* period;
 else
@@ -47,8 +47,11 @@ for pt = 1: temporal
     % 需要额外增加一个购电量的上、下限约束
     A2 = [EH1_A_eleLimit_total, EH2_A_eleLimit_total, EH2_A_eleLimit_total];
     b2 = ones(time, 1) .* eleLimit_total(1);
-%     b2_sale = ones(time, 1) .* eleLimit_total(2);
-    b2_sale = zeros(time, 1);
+    if couldExport == 1
+    	b2_sale = ones(time, 1) .* eleLimit_total(2);
+    else
+        b2_sale = zeros(time, 1);
+    end
     A = [A1; A2; -A2];
     b = [b1; b2; -b2_sale];
     

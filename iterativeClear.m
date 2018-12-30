@@ -1,6 +1,6 @@
 function [clearPrice, clearDemand] = iterativeClear(price_min, price_max, clearDemand_minPrice, clearDemand_maxPrice, ee, priceArray, gasPrice1, t_current)
 
-    global Grid1 EH1 EH2 EH3 minMarketPrice maxMarketPrice iterationNumber elePrice eleLimit_total
+    global Grid1 EH1 EH2 EH3 minMarketPrice maxMarketPrice iterationNumber elePrice eleLimit_total minimumPower
     
     price_medium = (price_min + price_max)/2;
     
@@ -16,13 +16,13 @@ function [clearPrice, clearDemand] = iterativeClear(price_min, price_max, clearD
         if clearDemand_medium_grid > eleLimit_total(1)
             clearDemand_medium_grid = eleLimit_total(1);
         end
-        if clearDemand_medium_grid < eleLimit_total(2)
-            clearDemand_medium_grid = eleLimit_total(2);
+        if clearDemand_medium_grid < minimumPower
+            clearDemand_medium_grid = minimumPower;
         end
     elseif  priceArray(t_current)>  elePrice(t_current)
         clearDemand_medium_grid =eleLimit_total(1);
     else
-        clearDemand_medium_grid =eleLimit_total(2);
+        clearDemand_medium_grid =minimumPower;
     end
     clearDemand_mediumPrice = [-clearDemand_medium_grid; clearDemand_medium_EH1; clearDemand_medium_EH2; clearDemand_medium_EH3]; %需求为正，供给为负
     

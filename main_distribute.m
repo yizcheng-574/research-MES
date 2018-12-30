@@ -1,7 +1,8 @@
 
 clc;clear;
-global caseType;
+global caseType couldExport
 caseType = 2;
+couldExport = 1;
 para_init;
 off_grid = 0; % 0表示正常运行，1表示IES1离网
 clear eleLimit1  gasLimit1  EH1_Le  EH1_Lh  EH1_solarP...

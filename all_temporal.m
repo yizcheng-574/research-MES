@@ -1,11 +1,15 @@
 %全时段的优化问题，与single_temporal比较
 %次梯度法求解
-global EH1 EH2 EH3 elePrice period
+global EH1 EH2 EH3 elePrice period couldExport minimumPower
 delta_lambda_max = 1e-4;
 maxIteration = 3000; %最大迭代次数
 iterativeStep = 1;
 ee = 0.001;
-
+if couldExport == 1
+    minimumPower = eleLimit_total(2);
+else
+    minimumPower = 0;
+end
 if isDA
     EH1.predict(0);
     EH2.predict(0);
@@ -60,13 +64,13 @@ for pt = 1 : temporal
                 if clearDemand_grid_new(i) > eleLimit_total(1)
                     clearDemand_grid_new(i) = eleLimit_total(1);
                 end
-                if clearDemand_grid_new(i) < eleLimit_total(2)
-                    clearDemand_grid_new(i) = eleLimit_total(2);
+                if clearDemand_grid_new(i) < minimumPower
+                    clearDemand_grid_new(i) = minimumPower;
                 end
             elseif lamda_new(i) > 0
                 clearDemand_grid_new(i) =eleLimit_total(1);
             else
-                clearDemand_grid_new(i) =eleLimit_total(2);
+                clearDemand_grid_new(i) = minimumPower;
             end
         end
         clearDemand_new = [-clearDemand_grid_new, clearDemand_EH1_new , clearDemand_EH2_new , clearDemand_EH3_new] ;

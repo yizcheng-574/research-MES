@@ -57,7 +57,7 @@ classdef EH_local_170828_v3 < handle
         ES_targetSOC;
         ES_Pmax;
         ES_eff;
-        
+        ES_selfd; % 1-自放电率
         %热储能
         HS_totalC;
         HS_maxSOC;
@@ -66,7 +66,7 @@ classdef EH_local_170828_v3 < handle
         HS_targetSOC;
         HS_Hmax;
         HS_eff;
-        
+        HS_selfd; % 1-自放热率
         %投标
         demand_curve;
         
@@ -134,6 +134,7 @@ classdef EH_local_170828_v3 < handle
             obj.ES_targetSOC = ES_para(4);
             obj.ES_Pmax = obj.ES_totalC / ES_para(6);
             obj.ES_eff = ES_para(7);
+            obj.ES_selfd = 0.95;
             
             obj.HS_totalC = HS_para(1);
             obj.HS_maxSOC = HS_para(2);
@@ -141,7 +142,7 @@ classdef EH_local_170828_v3 < handle
             obj.HS_targetSOC = HS_para(4);
             obj.HS_Hmax = obj.HS_totalC / HS_para(6);
             obj.HS_eff = HS_para(7);
-            
+            obj.HS_selfd = 0.9;
             % 投标
             obj.demand_curve = zeros(priceNumbers, 1); %初始化投标曲线
             
@@ -289,8 +290,8 @@ classdef EH_local_170828_v3 < handle
             obj.result_E_dr(t_current) = x(time*7+1);
             obj.result_H_dr(t_current) = x(time*8+1);
             %更新储能状态
-            obj.ES_SOC(t_current+1) = obj.ES_SOC(t_current) - obj.result_ES_discharge(t_current) / obj.ES_eff / obj.ES_totalC + obj.result_ES_charge(t_current) * obj.ES_eff / obj.ES_totalC;
-            obj.HS_SOC(t_current+1) = obj.HS_SOC(t_current) - obj.result_HS_discharge(t_current) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(t_current) * obj.HS_eff / obj.HS_totalC;
+            obj.ES_SOC(t_current+1) = obj.ES_selfd * obj.ES_SOC(t_current) - obj.result_ES_discharge(t_current) / obj.ES_eff / obj.ES_totalC + obj.result_ES_charge(t_current) * obj.ES_eff / obj.ES_totalC;
+            obj.HS_SOC(t_current+1) = obj.HS_selfd * obj.HS_SOC(t_current) - obj.result_HS_discharge(t_current) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(t_current) * obj.HS_eff / obj.HS_totalC;
         end
         
         
@@ -313,8 +314,8 @@ classdef EH_local_170828_v3 < handle
                 obj.result_E_dr(pt) = x(time*7+ 1 +pt -t_current);
                 obj.result_H_dr(pt) = x(time*8+ 1 +pt -t_current);
                 %更新储能状态
-                obj.ES_SOC(pt+1) = obj.ES_SOC(pt) - obj.result_ES_discharge(pt) / obj.ES_eff / obj.ES_totalC + obj.result_ES_charge(pt) * obj.ES_eff / obj.ES_totalC;
-                obj.HS_SOC(pt+1) = obj.HS_SOC(pt) - obj.result_HS_discharge(pt) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(pt) * obj.HS_eff / obj.HS_totalC;
+                obj.ES_SOC(pt+1) = obj.ES_selfd * obj.ES_SOC(pt) - obj.result_ES_discharge(pt) / obj.ES_eff / obj.ES_totalC + obj.result_ES_charge(pt) * obj.ES_eff / obj.ES_totalC;
+                obj.HS_SOC(pt+1) = obj.HS_selfd * obj.HS_SOC(pt) - obj.result_HS_discharge(pt) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(pt) * obj.HS_eff / obj.HS_totalC;
                 
             end
         end
@@ -442,56 +443,48 @@ classdef EH_local_170828_v3 < handle
             end
             %电、热储能平衡性约束
             Aeq_ES = zeros(1, var);
-            beq_ES = - (obj.ES_targetSOC - obj.ES_SOC(t_current)) * obj.ES_totalC;
+            beq_ES = - (obj.ES_targetSOC - obj.ES_SOC(t_current) * obj.ES_selfd ^ time) * obj.ES_totalC;
             for i=1:time
-                Aeq_ES(1, time*3+i) = 1/obj.ES_eff; %放电
-                Aeq_ES(1, time*4+i) = - 1*obj.ES_eff; %充电
+                Aeq_ES(1, time * 3 + i) = obj.ES_selfd ^ (time - i) / obj.ES_eff; %放电
+                Aeq_ES(1, time * 4 + i) = - obj.ES_selfd ^ (time - i) * obj.ES_eff; %充电
             end
             Aeq_HS = zeros(1, var);
-            beq_HS = - (obj.HS_targetSOC - obj.HS_SOC(t_current)) * obj.HS_totalC;
+            beq_HS = - (obj.HS_targetSOC - obj.HS_SOC(t_current) * obj.HS_selfd ^ time) * obj.HS_totalC;
             for i=1:time
-                Aeq_HS(1, time*5+i) = 1/obj.HS_eff; %放热
-                Aeq_HS(1, time*6+i) = - 1*obj.HS_eff; %充热
+                Aeq_HS(1, time * 5 + i) = obj.HS_selfd ^ (time - i) / obj.HS_eff; %放热
+                Aeq_HS(1, time * 6 + i) = - obj.HS_selfd ^ (time - i) * obj.HS_eff; %充热
             end
-            
-            
-            
-            %不等式约束包括：SOC约束；购气量和的约束；（爬坡率约束）
+             %不等式约束包括：SOC约束；购气量和的约束；（爬坡率约束）
             %SOC约束 A1是上限，A2是下限
             A1_Esoc = zeros(time, var);
-            A2_Esoc = zeros(time, var);
-            b1_Esoc = ones(time,1) * (obj.ES_maxSOC - obj.ES_SOC(t_current)) * obj.ES_totalC;
-            b2_Esoc = ones(time,1) * (obj.ES_SOC(t_current) - obj.ES_minSOC) * obj.ES_totalC;
-            for i=1:time
-                for j=1 : i
-                    A1_Esoc(i, time*3+j) = -1/obj.ES_eff; %放电
-                    A1_Esoc(i, time*4+j) = 1*obj.ES_eff; %充电
-                end
-            end
-            for i=1:time
-                for j=1 : i
-                    A2_Esoc(i, time*3+j) = 1/obj.ES_eff; %放电
-                    A2_Esoc(i, time*4+j) = -1*obj.ES_eff; %充电
-                end
+            b1_Esoc = zeros(time, 1);
+            b2_Esoc = zeros(time, 1);
+            for i = 1 : time
+               b1_Esoc(i, 1) = (obj.ES_maxSOC - obj.ES_SOC(t_current) * obj.ES_selfd ^ i) * obj.ES_totalC; 
+               b2_Esoc(i, 1) = (obj.ES_selfd ^ i * obj.ES_SOC(t_current) - obj.ES_minSOC) * obj.ES_totalC;
             end
             
+            for i=1:time
+                for j=1 : i
+                    A1_Esoc(i, time * 3 + j) = -  obj.ES_selfd ^ (i - j) / obj.ES_eff; %放电
+                    A1_Esoc(i, time * 4 + j) = obj.ES_selfd ^ (i - j) * obj.ES_eff; %充电
+                end
+            end
+            A2_Esoc = - A1_Esoc;
             A1_Hsoc = zeros(time, var);
-            A2_Hsoc = zeros(time, var);
-            b1_Hsoc = ones(time,1) * (obj.HS_maxSOC - obj.HS_SOC(t_current)) * obj.HS_totalC;
-            b2_Hsoc = ones(time,1) * (obj.HS_SOC(t_current) - obj.HS_minSOC) * obj.HS_totalC;
-            for i=1:time
-                for j=1 : i
-                    A1_Hsoc(i, time*5+j) = -1/obj.HS_eff; %放热
-                    A1_Hsoc(i, time*6+j) = 1*obj.HS_eff; %充热
-                end
+            b1_Hsoc = zeros(time, 1);
+            b2_Hsoc = zeros(time, 1);
+            for i = 1 : time
+                b1_Hsoc(i, 1) = (obj.HS_maxSOC - obj.HS_SOC(t_current) * obj.HS_selfd ^ i) * obj.HS_totalC;
+                b2_Hsoc(i, 1) = (obj.HS_SOC(t_current) * obj.HS_selfd ^ i - obj.HS_minSOC) * obj.HS_totalC;
             end
             for i=1:time
                 for j=1 : i
-                    A2_Hsoc(i, time*5+j) = 1/obj.HS_eff; %放热
-                    A2_Hsoc(i, time*6+j) = -1*obj.HS_eff; %充热
+                    A1_Hsoc(i, time*5+j) = - obj.HS_selfd ^ (i - j) / obj.HS_eff; %放热
+                    A1_Hsoc(i, time*6+j) = obj.HS_selfd ^ (i - j) * obj.HS_eff; %充热
                 end
             end
-            
+            A2_Hsoc = -A1_Hsoc;
             %购气量和的约束
             A_Gmax = zeros(time, var);
             b_Gmax = ones(time,1) .* obj.Gas_max;
@@ -499,8 +492,6 @@ classdef EH_local_170828_v3 < handle
                 A_Gmax(i, time+i) = 1;
                 A_Gmax(i, time*2+i) = 1;
             end
-            
-            
             
             %归纳所有线性约束
             %等式约束包括：电、热平衡约束（改为不等式），电、热储能平衡性约束（改为不等式）
@@ -607,19 +598,17 @@ classdef EH_local_170828_v3 < handle
             end
             %电、热储能平衡性约束
             Aeq_ES = zeros(1, var);
-            beq_ES = - (obj.ES_targetSOC - obj.ES_SOC(t_current)) * obj.ES_totalC;
+            beq_ES = - (obj.ES_targetSOC - obj.ES_SOC(t_current) * obj.ES_selfd ^ time) * obj.ES_totalC;
             for i=1:time
-                Aeq_ES(1, time * 3 + i) = 1 / obj.ES_eff; %放电
-                Aeq_ES(1, time * 4 + i) = - 1 * obj.ES_eff; %充电
+                Aeq_ES(1, time * 3 + i) = obj.ES_selfd ^ (time - i) / obj.ES_eff; %放电
+                Aeq_ES(1, time * 4 + i) = - obj.ES_selfd ^ (time - i) * obj.ES_eff; %充电
             end
             Aeq_HS = zeros(1, var);
-            beq_HS = - (obj.HS_targetSOC - obj.HS_SOC(t_current)) * obj.HS_totalC;
+            beq_HS = - (obj.HS_targetSOC - obj.HS_SOC(t_current) * obj.HS_selfd ^ time) * obj.HS_totalC;
             for i=1:time
-                Aeq_HS(1, time * 5 + i) = 1 / obj.HS_eff; %放热
-                Aeq_HS(1, time * 6 + i) = - 1 * obj.HS_eff; %充热
+                Aeq_HS(1, time * 5 + i) = obj.HS_selfd ^ (time - i) / obj.HS_eff; %放热
+                Aeq_HS(1, time * 6 + i) = - obj.HS_selfd ^ (time - i) * obj.HS_eff; %充热
             end
-            
-            
             
             %不等式约束
             %EES binary约束
@@ -675,41 +664,37 @@ classdef EH_local_170828_v3 < handle
             A_binary = [A_EESbinary; A_TESbinary; A_EEScharge; A_EESdischarge; A_TEScharge; A_TESdischarge];
             b_binary = [b_EESbinary; b_TESbinary; b_EEScharge; b_EESdischarge; b_TEScharge; b_TESdischarge];
             
+              %不等式约束包括：SOC约束；购气量和的约束；（爬坡率约束）
             %SOC约束 A1是上限，A2是下限
             A1_Esoc = zeros(time, var);
-            A2_Esoc = zeros(time, var);
-            b1_Esoc = ones(time,1) * (obj.ES_maxSOC - obj.ES_SOC(t_current)) * obj.ES_totalC;
-            b2_Esoc = ones(time,1) * (obj.ES_SOC(t_current) - obj.ES_minSOC) * obj.ES_totalC;
-            for i=1:time
-                for j=1 : i
-                    A1_Esoc(i, time * 3 + j) = -1 / obj.ES_eff; %放电
-                    A1_Esoc(i, time * 4 + j) = 1 * obj.ES_eff; %充电
-                end
-            end
-            for i=1:time
-                for j=1 : i
-                    A2_Esoc(i, time * 3 + j) = 1 / obj.ES_eff; %放电
-                    A2_Esoc(i, time * 4 + j) = -1 * obj.ES_eff; %充电
-                end
+            b1_Esoc = zeros(time, 1);
+            b2_Esoc = zeros(time, 1);
+            for i = 1 : time
+               b1_Esoc(i, 1) = (obj.ES_maxSOC - obj.ES_SOC(t_current) * obj.ES_selfd ^ i) * obj.ES_totalC; 
+               b2_Esoc(i, 1) = (obj.ES_selfd ^ i * obj.ES_SOC(t_current) - obj.ES_minSOC) * obj.ES_totalC;
             end
             
+            for i=1:time
+                for j=1 : i
+                    A1_Esoc(i, time * 3 + j) = -  obj.ES_selfd ^ (i - j) / obj.ES_eff; %放电
+                    A1_Esoc(i, time * 4 + j) = obj.ES_selfd ^ (i - j) * obj.ES_eff; %充电
+                end
+            end
+            A2_Esoc = - A1_Esoc;
             A1_Hsoc = zeros(time, var);
-            A2_Hsoc = zeros(time, var);
-            b1_Hsoc = ones(time,1) * (obj.HS_maxSOC - obj.HS_SOC(t_current)) * obj.HS_totalC;
-            b2_Hsoc = ones(time,1) * (obj.HS_SOC(t_current) - obj.HS_minSOC) * obj.HS_totalC;
-            for i=1:time
-                for j=1 : i
-                    A1_Hsoc(i, time * 5 + j) = -1/obj.HS_eff; %放热
-                    A1_Hsoc(i, time * 6 + j) = 1 * obj.HS_eff; %充热
-                end
+            b1_Hsoc = zeros(time, 1);
+            b2_Hsoc = zeros(time, 1);
+            for i = 1 : time
+                b1_Hsoc(i, 1) = (obj.HS_maxSOC - obj.HS_SOC(t_current) * obj.HS_selfd ^ i) * obj.HS_totalC;
+                b2_Hsoc(i, 1) = (obj.HS_SOC(t_current) * obj.HS_selfd ^ i - obj.HS_minSOC) * obj.HS_totalC;
             end
             for i=1:time
                 for j=1 : i
-                    A2_Hsoc(i, time*5 + j) = 1 / obj.HS_eff; %放热
-                    A2_Hsoc(i, time*6 + j) = -1*obj.HS_eff; %充热
+                    A1_Hsoc(i, time*5+j) = - obj.HS_selfd ^ (i - j) / obj.HS_eff; %放热
+                    A1_Hsoc(i, time*6+j) = obj.HS_selfd ^ (i - j) * obj.HS_eff; %充热
                 end
             end
-            
+            A2_Hsoc = -A1_Hsoc;
             %购气量和的约束
             A_Gmax = zeros(time, var);
             b_Gmax = ones(time,1) .* obj.Gas_max;
@@ -765,7 +750,6 @@ classdef EH_local_170828_v3 < handle
             for i = 1 : time
                 lb(i, 1) = obj.Ele_min;
                 lb(time + i, 1) = obj.CHP_G_min;
-
             end
             
             %等式约束包括：电、热平衡约束（供大于求，改为不等式）；电、热储能平衡性约束（改为不等式约束？）
@@ -803,56 +787,49 @@ classdef EH_local_170828_v3 < handle
             end
             %电、热储能平衡性约束
             Aeq_ES = zeros(1, var);
-            beq_ES = - (obj.ES_targetSOC - obj.ES_SOC(t_current)) * obj.ES_totalC;
+            beq_ES = - (obj.ES_targetSOC - obj.ES_SOC(t_current) * obj.ES_selfd ^ time) * obj.ES_totalC;
             for i=1:time
-                Aeq_ES(1, time * 3 + i) = 1 / obj.ES_eff; %放电
-                Aeq_ES(1, time * 4 + i) = - 1 * obj.ES_eff; %充电
+                Aeq_ES(1, time * 3 + i) = obj.ES_selfd ^ (time - i) / obj.ES_eff; %放电
+                Aeq_ES(1, time * 4 + i) = - obj.ES_selfd ^ (time - i) * obj.ES_eff; %充电
             end
             Aeq_HS = zeros(1, var);
-            beq_HS = - (obj.HS_targetSOC - obj.HS_SOC(t_current)) * obj.HS_totalC;
+            beq_HS = - (obj.HS_targetSOC - obj.HS_SOC(t_current) * obj.HS_selfd ^ time) * obj.HS_totalC;
             for i=1:time
-                Aeq_HS(1, time * 5 + i) = 1 / obj.HS_eff; %放热
-                Aeq_HS(1, time * 6 + i) = - 1 * obj.HS_eff; %充热
+                Aeq_HS(1, time * 5 + i) = obj.HS_selfd ^ (time - i) / obj.HS_eff; %放热
+                Aeq_HS(1, time * 6 + i) = - obj.HS_selfd ^ (time - i) * obj.HS_eff; %充热
             end
             
-            
-            
-            %不等式约束包括：SOC约束；购气量和的约束；（爬坡率约束）
+             %不等式约束包括：SOC约束；购气量和的约束；（爬坡率约束）
             %SOC约束 A1是上限，A2是下限
             A1_Esoc = zeros(time, var);
-            A2_Esoc = zeros(time, var);
-            b1_Esoc = ones(time,1) * (obj.ES_maxSOC - obj.ES_SOC(t_current)) * obj.ES_totalC;
-            b2_Esoc = ones(time,1) * (obj.ES_SOC(t_current) - obj.ES_minSOC) * obj.ES_totalC;
-            for i=1:time
-                for j=1 : i
-                    A1_Esoc(i, time * 3 + j) = -1 / obj.ES_eff; %放电
-                    A1_Esoc(i, time * 4 + j) = 1 * obj.ES_eff; %充电
-                end
-            end
-            for i=1:time
-                for j=1 : i
-                    A2_Esoc(i, time * 3 + j) = 1 / obj.ES_eff; %放电
-                    A2_Esoc(i, time * 4 + j) = -1 * obj.ES_eff; %充电
-                end
+            b1_Esoc = zeros(time, 1);
+            b2_Esoc = zeros(time, 1);
+            for i = 1 : time
+               b1_Esoc(i, 1) = (obj.ES_maxSOC - obj.ES_SOC(t_current) * obj.ES_selfd ^ i) * obj.ES_totalC; 
+               b2_Esoc(i, 1) = (obj.ES_selfd ^ i * obj.ES_SOC(t_current) - obj.ES_minSOC) * obj.ES_totalC;
             end
             
+            for i=1:time
+                for j=1 : i
+                    A1_Esoc(i, time * 3 + j) = -  obj.ES_selfd ^ (i - j) / obj.ES_eff; %放电
+                    A1_Esoc(i, time * 4 + j) = obj.ES_selfd ^ (i - j) * obj.ES_eff; %充电
+                end
+            end
+            A2_Esoc = - A1_Esoc;
             A1_Hsoc = zeros(time, var);
-            A2_Hsoc = zeros(time, var);
-            b1_Hsoc = ones(time,1) * (obj.HS_maxSOC - obj.HS_SOC(t_current)) * obj.HS_totalC;
-            b2_Hsoc = ones(time,1) * (obj.HS_SOC(t_current) - obj.HS_minSOC) * obj.HS_totalC;
-            for i=1:time
-                for j=1 : i
-                    A1_Hsoc(i, time * 5 + j) = -1 / obj.HS_eff; %放热
-                    A1_Hsoc(i, time * 6 + j) = 1 * obj.HS_eff; %充热
-                end
+            b1_Hsoc = zeros(time, 1);
+            b2_Hsoc = zeros(time, 1);
+            for i = 1 : time
+                b1_Hsoc(i, 1) = (obj.HS_maxSOC - obj.HS_SOC(t_current) * obj.HS_selfd ^ i) * obj.HS_totalC;
+                b2_Hsoc(i, 1) = (obj.HS_SOC(t_current) * obj.HS_selfd ^ i - obj.HS_minSOC) * obj.HS_totalC;
             end
             for i=1:time
                 for j=1 : i
-                    A2_Hsoc(i, time * 5 + j) = 1 / obj.HS_eff; %放热
-                    A2_Hsoc(i, time * 6 + j) = -1 * obj.HS_eff; %充热
+                    A1_Hsoc(i, time*5+j) = - obj.HS_selfd ^ (i - j) / obj.HS_eff; %放热
+                    A1_Hsoc(i, time*6+j) = obj.HS_selfd ^ (i - j) * obj.HS_eff; %充热
                 end
             end
-            
+            A2_Hsoc = -A1_Hsoc;
             %购气量和的约束
             A_Gmax = zeros(time, var);
             b_Gmax = ones(time,1) .* obj.Gas_max;
@@ -866,8 +843,8 @@ classdef EH_local_170828_v3 < handle
             %不等式约束包括：SOC约束，购气量和的约束，（爬坡率约束）
             Aeq=[Aeq_Edr; Aeq_Hdr;Aeq_Hbus; Aeq_ES; Aeq_HS; ];
             beq=[beq_Edr; beq_Hdr;beq_Hbus';beq_ES; beq_HS;];
-            A=[Aeq_Ebus;      A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
-            b=[beq_Ebus';        b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
+            A=[Aeq_Ebus;  A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
+            b=[beq_Ebus'; b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
 
            % 需要额外增加一个购电量的上、下限约束
             A_eleLimit_total = zeros(time, var);
@@ -894,8 +871,8 @@ classdef EH_local_170828_v3 < handle
             obj.result_E_dr(t_current)=  x(time * 7 + 1 + (IES_no - 1) * var );
             obj.result_H_dr(t_current) = x(time * 8 + 1 + (IES_no - 1) * var);
             %更新储能状态
-            obj.ES_SOC(t_current+1) = obj.ES_SOC(t_current) - obj.result_ES_discharge(t_current) / obj.ES_eff / obj.ES_totalC + obj.result_ES_charge(t_current) * obj.ES_eff / obj.ES_totalC;
-            obj.HS_SOC(t_current+1) = obj.HS_SOC(t_current) - obj.result_HS_discharge(t_current) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(t_current) * obj.HS_eff / obj.HS_totalC;
+            obj.ES_SOC(t_current+1) = obj.ES_selfd * obj.ES_SOC(t_current) - obj.result_ES_discharge(t_current) / obj.ES_eff / obj.ES_totalC + obj.result_ES_charge(t_current) * obj.ES_eff / obj.ES_totalC;
+            obj.HS_SOC(t_current+1) = obj.HS_selfd * obj.HS_SOC(t_current) - obj.result_HS_discharge(t_current) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(t_current) * obj.HS_eff / obj.HS_totalC;
         end
         
     end

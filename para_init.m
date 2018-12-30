@@ -20,15 +20,15 @@ elseif period == 4 % 只有174家公司了
     load windValue_15min.mat
 end
 load '../gridPriceRecord'
-Le_max = [2 , 1.3 , 1.5] * 1000;
+Le_max = [2 , 2.3 , 1.5] * 1000;
 Lh_max = [1 , 2 , 2] * 1000;
-Le_dr_rate = [0.2, 0.2, 0.1];
-Lh_dr_rate = [0.2, 0.2, 0.1];
+Le_dr_rate = [0.2, 0.1, 0.1];
+Lh_dr_rate = [0.2, 0.1, 0.1];
 % Le_dr_rate = [0 0 0];
 % Lh_dr_rate = [0 0 0];
 
-solar_max = [1 , 1 , 0.5] * 1000;
-wind_max = [0.3 , 2 , 0.1] * 1000;
+solar_max = [1 , 0.1 , 0.5] * 1000;
+wind_max = [0.3 , 1 , 0.1] * 1000;
 % IES1 工业区，电热负荷都比较平，白天稍高，热大于电，负荷型
 EH1_Le = loadValue(:,94); % 对应134号公司 %/10
 EH1_Lh = loadValue(:,143); % 对应223号公司 %/5
@@ -182,7 +182,7 @@ EH2_Lh_drP_total = EH2_Lh_drP_rate * 5;
 EH3_Lh_drP_total = EH3_Lh_drP_rate * 5;
 
 singleLimit = Le_max * 1.2;
-totalLimit = 2 * mean(EH1_Le_jing) + mean(EH2_Le_jing) + mean(EH3_Le_jing)+...
+totalLimit = 1.5 * mean(EH1_Le_jing) + mean(EH2_Le_jing) + mean(EH3_Le_jing)+...
     (EH1_Le_drP_total +EH1_Le_drP_total + EH1_Le_drP_total )/(24 * period) ;
 reverseRate = 4;
 % 支线: 下级向上级购电、售电约束，再加一个线损率5-7%

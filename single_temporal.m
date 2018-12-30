@@ -1,5 +1,5 @@
 %单时段的优化问题，与all_temporal比较
-global minMarketPrice maxMarketPrice period IESNUMBER elePrice
+global minMarketPrice maxMarketPrice period IESNUMBER elePrice  minimumPower
 ee = 1e-2; %0.0001 0.0003
 iterativeStep = 1e-5; %0.00001 0.0001
 iterationTimes = zeros(24*period, 2); %记录迭代次数
@@ -65,13 +65,13 @@ if isGrad == 1%次梯度法求解
                 if clearDemand_grid_new > eleLimit_total(1)
                     clearDemand_grid_new = eleLimit_total(1);
                 end
-                if clearDemand_grid_new < eleLimit_total(2)
-                    clearDemand_grid_new = eleLimit_total(2);
+                if clearDemand_grid_new < minimumPower
+                    clearDemand_grid_new = minimumPower;
                 end
             elseif lamda_new > 0
                 clearDemand_grid_new =eleLimit_total(1);
             else
-                clearDemand_grid_new =eleLimit_total(2);
+                clearDemand_grid_new =minimumPower;
             end
             % 存储老的clearDemand，计算新的clearDemand，并记录
             
@@ -179,13 +179,13 @@ else    %二分法求解
             if clearDemand_minPrice_grid > eleLimit_total(1)
                 clearDemand_minPrice_grid = eleLimit_total(1);
             end
-            if clearDemand_minPrice_grid < eleLimit_total(2)
-                clearDemand_minPrice_grid = eleLimit_total(2);
+            if clearDemand_minPrice_grid < minimumPower
+                clearDemand_minPrice_grid = minimumPower;
             end
-        elseif  priceArray(pt )>  elePrice(pt)
+        elseif  priceArray(pt)>  elePrice(pt)
             clearDemand_minPrice_grid =eleLimit_total(1);
         else
-            clearDemand_minPrice_grid =eleLimit_total(2);
+            clearDemand_minPrice_grid =minimumPower;
         end
         clearDemand_minPrice = [-clearDemand_minPrice_grid; clearDemand_minPrice_EH1; clearDemand_minPrice_EH2; clearDemand_minPrice_EH3]; % 需求为正，供给为负
 
@@ -198,17 +198,17 @@ else    %二分法求解
         [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice1, pt);
         clearDemand_maxPrice_EH3 = x(1);
         if priceArray(pt) ==  elePrice(pt)
-                clearDemand_maxPrice_grid = clearDemand_maxPrice_EH1 + clearDemand_maxPrice_EH2 + clearDemand_maxPrice_EH3;
-                if clearDemand_maxPrice_grid > eleLimit_total(1)
-                    clearDemand_maxPrice_grid = eleLimit_total(1);
-                end
-                if clearDemand_maxPrice_grid < eleLimit_total(2)
-                    clearDemand_maxPrice_grid = eleLimit_total(2);
-                end
+            clearDemand_maxPrice_grid = clearDemand_maxPrice_EH1 + clearDemand_maxPrice_EH2 + clearDemand_maxPrice_EH3;
+            if clearDemand_maxPrice_grid > eleLimit_total(1)
+                clearDemand_maxPrice_grid = eleLimit_total(1);
+            end
+            if clearDemand_maxPrice_grid < minimumPower
+                clearDemand_maxPrice_grid = minimumPower;
+            end
         elseif  priceArray(pt )>  elePrice(pt)
                 clearDemand_maxPrice_grid =eleLimit_total(1);
         else
-                clearDemand_maxPrice_grid =eleLimit_total(2);
+                clearDemand_maxPrice_grid =minimumPower;
         end
         clearDemand_maxPrice = [-clearDemand_maxPrice_grid; clearDemand_maxPrice_EH1; clearDemand_maxPrice_EH2; clearDemand_maxPrice_EH3]; % 需求为正，供给为负
         
@@ -229,9 +229,9 @@ else    %二分法求解
         
     end
 end
-[result_Ele(:,1), result_CHP_G(:,1), result_Boiler_G(:,1), result_ES_discharge(:,1), result_ES_charge(:,1), result_HS_discharge(:,1), result_HS_charge(:,1), result_ES_SOC(:,1), result_HS_SOC(:,1), EH1_Le, EH1_Lh, EH1_solarP, EH1_windP, EH1_Edr, EH1_Hdr] = EH1.getResult;
-[result_Ele(:,2), result_CHP_G(:,2), result_Boiler_G(:,2), result_ES_discharge(:,2), result_ES_charge(:,2), result_HS_discharge(:,2), result_HS_charge(:,2), result_ES_SOC(:,2), result_HS_SOC(:,2), EH2_Le, EH2_Lh, EH2_solarP, EH2_windP, EH2_Edr, EH2_Hdr] = EH2.getResult;
-[result_Ele(:,3), result_CHP_G(:,3), result_Boiler_G(:,3), result_ES_discharge(:,3), result_ES_charge(:,3), result_HS_discharge(:,3), result_HS_charge(:,3), result_ES_SOC(:,3), result_HS_SOC(:,3), EH3_Le, EH3_Lh, EH3_solarP, EH3_windP, EH3_Edr, EH3_Hdr] = EH3.getResult;
+[result_Ele(:,1), result_CHP_G(:,1), result_Boiler_G(:,1), result_ES_discharge(:,1), result_ES_charge(:,1), result_HS_discharge(:,1), result_HS_charge(:,1), result_ES_SOC(:,1), result_HS_SOC(:,1), result_EH_Le(:, 1), result_EH_Lh(:,1), result_EH_solarP(:,1), result_EH_windP(:,1), result_EH_Edr(:,1), result_EH_Hdr(:,1)] = EH1.getResult;
+[result_Ele(:,2), result_CHP_G(:,2), result_Boiler_G(:,2), result_ES_discharge(:,2), result_ES_charge(:,2), result_HS_discharge(:,2), result_HS_charge(:,2), result_ES_SOC(:,2), result_HS_SOC(:,2), result_EH_Le(:, 2), result_EH_Lh(:,2), result_EH_solarP(:,2), result_EH_windP(:,2), result_EH_Edr(:,2), result_EH_Hdr(:,2)] = EH2.getResult;
+[result_Ele(:,3), result_CHP_G(:,3), result_Boiler_G(:,3), result_ES_discharge(:,3), result_ES_charge(:,3), result_HS_discharge(:,3), result_HS_charge(:,3), result_ES_SOC(:,3), result_HS_SOC(:,3), result_EH_Le(:, 3), result_EH_Lh(:,3), result_EH_solarP(:,3), result_EH_windP(:,3), result_EH_Edr(:,3), result_EH_Hdr(:,3)] = EH3.getResult;
 if isDA
     priceArray_record(:,2) = priceArray;
 else

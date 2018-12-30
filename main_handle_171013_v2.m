@@ -52,7 +52,7 @@ if caseType ~=32
         ylim([0, max(max(EH_Le), max(EH_Lh)) / 1000]);
         xticks(0 : (24 * period / 4) : 24 * period);
         xticklabels({ '0:00', '6:00', '12:00', '18:00', '24:00' });
-        xlabel(sprintf('IES%d', IES_no))
+        xlabel(sprintf('MES%d', IES_no))
         ylabel('Load(MW)')
         if IES_no == 1
             H1 = legend('base electric load','total electric load','base thermal load','total thermal load',...
@@ -70,7 +70,7 @@ if caseType ~=32
         xlim([0, 24*period]);
         xticks(0 : (24 * period /4) : 24 * period);
         xticklabels({'0:00','6:00','12:00','18:00','24:00'});
-        xlabel(sprintf('IES%d', IES_no))
+        xlabel(sprintf('MES%d', IES_no))
         % ylabel('RES power / kW')
         % xlabel('time / h')
         % legend('PV','WT','Location','northoutside','Orientation','horizontal')
@@ -102,9 +102,9 @@ if caseType ~=32
     
     % 计算
     %计算总成本 按网价计算
-    totalCost = (result_Ele' *  elePrice + sum(result_Gas)' * gasPrice1) / period;
-    totalCost
-    sum(totalCost)
+    cost_clear =  (result_Ele' * priceArray + sum(result_Gas)' * gasPrice1) / period
+    cost_utility = (result_Ele' *  elePrice + sum(result_Gas)' * gasPrice1) / period;
+    totalCost = sum(cost_utility)
     % --------------------------------------绘图--------------------------------------
     t1 = 1 : 1 : 24 * period;
     t2 = 0 : 1 : 24 * period;
@@ -210,7 +210,7 @@ if caseType ~=32
         ylim([0,1]);
         yticks(0.1:0.2:1);
         
-        xlabel(sprintf('IES%d', IES_no));
+        xlabel(sprintf('MES%d', IES_no));
         xlim([0, 24 * period + 1]);
         xticks(0:(24 * period / 4) : 24 * period);
         xticklabels({ '0:00','6:00','12:00','18:00','24:00' });
@@ -272,7 +272,7 @@ if caseType ~=32
         ylim([0,1]);
         yticks(0.1:0.2:1);
         
-        xlabel(sprintf('IES%d',IES_no));
+        xlabel(sprintf('MES%d',IES_no));
         xlim([0, 24 * period + 1]);
         xticks(0 : (24 * period / 4) : 24 * period);
         xticklabels({'0:00','6:00','12:00','18:00','24:00'});
