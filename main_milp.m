@@ -1,7 +1,6 @@
 % 集中式优化：单次
 clc;clear;
 close all;
-caseType = 2;
 para_init;
 %1 全时段集中式优化
 %2 集中式滚动优化

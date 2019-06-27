@@ -1,5 +1,6 @@
 %全时段的优化问题，与single_temporal比较
 %次梯度法求解
+% 用于日前预测或日内作为对比
 global EH1 EH2 EH3 elePrice period couldExport minimumPower
 delta_lambda_max = 1e-4;
 maxIteration = 3000; %最大迭代次数
@@ -16,13 +17,13 @@ if isDA
     EH3.predict(0);
     priceArray_record(:,1) = elePrice;
     prePrice = elePrice;
-end
-if isDA
     temporal = 1;
+    st = 1;
 else
     temporal =  24* period;
+    st = time;
 end
-for pt = 1 : temporal
+for pt = st : temporal
     if isDA == 0
         EH1.predict(pt);
         EH2.predict(pt);

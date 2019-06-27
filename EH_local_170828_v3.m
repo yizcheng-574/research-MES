@@ -186,8 +186,8 @@ classdef EH_local_170828_v3 < handle
                         dev_l = 0;
                         dev_res = 0;
                     else
-                        dev_l = 0;
-                        dev_res = 0;
+                        dev_l = 0.08;
+                        dev_res = 0.1;
                     end
                     Le_error = randn() * obj.Le_real(pt) * dev_l; %Ô¤²âÎó²î
                     Lh_error = randn() * obj.Lh_real(pt) * dev_l;

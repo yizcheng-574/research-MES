@@ -1,19 +1,9 @@
-% 集中式优化：单次
+% 集中式滚动优化
 caseType = 2;
 para_init;
-isCentral = 2;
-%1 全时段集中式优化
-%2 集中式滚动优化
-%0 分布式滚动优化
 global period couldExport
-if isCentral == 2 
-    temporal = 24* period;
-else
-    temporal = 1;
-    EH1.predict(0);
-    EH2.predict(0);
-    EH3.predict(0);
-end
+temporal = 24* period;
+   
 for pt = 1: temporal
     EH1.predict(pt);
     EH2.predict(pt);
@@ -57,10 +47,8 @@ for pt = 1: temporal
     
     [x,fval,exitflag,output,lambda] = linprog(f,A,b,Aeq,beq,lb,ub);
     
-    if isCentral == 2
-        for IES_no = 1 : IESNUMBER
-            eval(['EH',num2str(IES_no),'.update_central(x, pt, IES_no);']);
-        end
+    for IES_no = 1 : IESNUMBER
+        eval(['EH',num2str(IES_no),'.update_central(x, pt, IES_no);']);
     end
 end
 [result_Ele(:,1), result_CHP_G(:,1), result_Boiler_G(:,1), result_ES_discharge(:,1), result_ES_charge(:,1), result_HS_discharge(:,1), result_HS_charge(:,1), result_ES_SOC(:,1), result_HS_SOC(:,1), result_EH_Le(:, 1), result_EH_Lh(:,1), result_EH_solarP(:,1), result_EH_windP(:,1), result_EH_Edr(:,1), result_EH_Hdr(:,1)] = EH1.getResult;
