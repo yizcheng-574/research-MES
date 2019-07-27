@@ -119,19 +119,25 @@ gasLimit3 = 1e6;
 % gasLimit_total = 150; %暂时无法对天然气总量做单独约束，只能默认是各支线约束的和
 
 %CHP的参数
-CHP1_para = [0.30, 0.42, 1400, 0, 0.6]; % CHP_GE_eff_in, CHP_GH_eff_in, CHP_Prate_in, CHP_Pmin_Rate_in, CHP_ramp_rate
-CHP2_para = [0.35, 0.45, 1200, 0, 0.6];
+CHP1_para = [0.30, 0.42, 1400, 0.3, 0.6]; % CHP_GE_eff_in, CHP_GH_eff_in, CHP_Prate_in, CHP_Pmin_Rate_in, CHP_ramp_rate
+CHP2_para = [0.35, 0.45, 1200, 0.3, 0.6];
 
 if caseType == 31
     CHP3_para = [0.28, 0.56, 1, 0.2, 0.5];
 else
-    CHP3_para = [0.28, 0.56, 1200, 0, 0.5];
+    CHP3_para = [0.28, 0.56, 1200, 0.3, 0.5];
 end
 
-%锅炉
-Boiler1_para = [0.90; Lh_max(1)/0.9]; % Boiler_eff_in, Boiler_Prate_in
-Boiler2_para = [0.90; Lh_max(2)/0.9];
-Boiler3_para = [0.90; Lh_max(3)/0.9];
+%电锅炉
+eBoiler1_para = [0.98; Lh_max(1) * 1.5; 0; 0.5]; % eBoiler_eff_in, eBoiler_Prate_in, eBoiler_Prate_min, eBoiler_Prate_ramp
+eBoiler2_para = [0.98; Lh_max(2) * 1.5; 0; 0.5];
+eBoiler3_para = [0.98; Lh_max(3) * 1.5; 0; 0.5];
+
+%燃气锅炉
+% 先把容量调大看看效果
+Boiler1_para = [0.90; Lh_max(1) * 1]; % Boiler_eff_in, Boiler_Prate_in
+Boiler2_para = [0.90; Lh_max(2) * 1];
+Boiler3_para = [0.90; Lh_max(3) * 1];
 
 %电储能和热储能
 % ES_totalC_in, ES_maxSOC_in, ES_minSOC_in, ES_currentSOC_in, ES_targetSOC_in, ES_chargeTime, ES_eff_in
@@ -209,13 +215,13 @@ eleLimit_total = [totalLimit * 1.1, -totalLimit/reverseRate]; % 馈线
 % 电网
 Grid1 = Grid_171118(eleLimit_total);
 % EH参数与实例化
-EH1 = EH_local_170828_v3(eleLimit1, gasLimit1, EH1_Le, EH1_Lh, EH1_solarP, EH1_windP, CHP1_para, Boiler1_para,...
+EH1 = EH_local_170828_v3(eleLimit1, gasLimit1, EH1_Le, EH1_Lh, EH1_solarP, EH1_windP, CHP1_para, Boiler1_para, eBoiler1_para,...
     ES1_para, HS1_para, dev_L, dev_PV, dev_WT, EH1_solarP_rate, EH1_windP_rate, ...
     EH1_Le_drP_rate, EH1_Le_drP_total, EH1_Lh_drP_rate, EH1_Lh_drP_total, EH1_Le_flag', EH1_Lh_flag');
-EH2 = EH_local_170828_v3(eleLimit2, gasLimit2, EH2_Le, EH2_Lh, EH2_solarP, EH2_windP, CHP2_para, Boiler2_para,...
+EH2 = EH_local_170828_v3(eleLimit2, gasLimit2, EH2_Le, EH2_Lh, EH2_solarP, EH2_windP, CHP2_para, Boiler2_para, eBoiler2_para,...
     ES2_para, HS2_para, dev_L, dev_PV, dev_WT, EH2_solarP_rate, EH2_windP_rate,...
     EH2_Le_drP_rate, EH2_Le_drP_total, EH2_Lh_drP_rate, EH2_Lh_drP_total, EH2_Le_flag', EH2_Lh_flag');
-EH3 = EH_local_170828_v3(eleLimit3, gasLimit3, EH3_Le, EH3_Lh, EH3_solarP, EH3_windP, CHP3_para, Boiler3_para, ...
+EH3 = EH_local_170828_v3(eleLimit3, gasLimit3, EH3_Le, EH3_Lh, EH3_solarP, EH3_windP, CHP3_para, Boiler3_para, eBoiler3_para,...
     ES3_para, HS3_para, dev_L, dev_PV, dev_WT, EH3_solarP_rate, EH3_windP_rate,...
     EH3_Le_drP_rate, EH3_Le_drP_total, EH3_Lh_drP_rate, EH3_Lh_drP_total, EH3_Le_flag', EH3_Lh_flag');
 

@@ -90,6 +90,7 @@ if caseType ~=32
         eval(['result_CHP_power(:,IES_no) = result_CHP_G(:,IES_no) .* EH',num2str(IES_no),'.CHP_GE_eff; ']);
         eval(['result_CHP_heat(:,IES_no) = result_CHP_G(:,IES_no) .* EH',num2str(IES_no),'.CHP_GH_eff; ']);
         eval(['result_Boiler_heat(:,IES_no) = result_Boiler_G(:,IES_no) .* EH',num2str(IES_no),'.Boiler_eff;']);
+        eval(['result_eBoiler_H(:, IES_no) = result_eBoiler_E(:, IES_no) .* EH',num2str(IES_no),'.eBoiler_eff;']);
     end
     %--------------------------------------测试优化结果--------------------------------------
     ee = 1e-3;
@@ -126,8 +127,8 @@ if caseType ~=32
     hold on;
     yyaxis left;
     H1 = bar(t1, -c4_gridClearDemand/1000);
-    H1(1).EdgeColor = dodgerblue;
     H1(1).FaceColor = dodgerblue;
+    H1(1).EdgeColor = 'none';
     H3 = stairs(t2, ones(24*period+1, 1) .* eleLimit_total(1)/1000, 'Color',gray,'LineStyle','--','LineWidth',1);
     H4 = stairs(t2, ones(24*period+1, 1) * eleLimit_total(2)/1000, 'Color',gray,'LineStyle','--','LineWidth',1);
     ylabel('transformer power(MW)');
@@ -175,7 +176,7 @@ if caseType ~=32
         hold on
         bar_positive = [result_Ele_loss_positive(:,IES_no), result_CHP_power(:,IES_no), ...
             result_EH_solarP(:, IES_no) + result_EH_windP(:, IES_no), result_ES_discharge(:,IES_no)] ./ 1000;
-        bar_negtive = [result_Ele_loss_negtive(:,IES_no), -result_ES_charge(:,IES_no)] ./1000;
+        bar_negtive = [result_Ele_loss_negtive(:,IES_no), - result_eBoiler_E(:, IES_no), -result_ES_charge(:,IES_no)] ./1000;
         Egen = (result_Ele_loss(:,IES_no) + result_CHP_power(:,IES_no) + result_EH_solarP(:, IES_no) + result_EH_windP(:, IES_no)...
             + result_ES_discharge(:,IES_no) - result_ES_charge(:,IES_no)) ./1000 ;
         Eload = (result_EH_Le(:, IES_no) + result_EH_Edr(:, IES_no)) ./1000;
@@ -183,21 +184,22 @@ if caseType ~=32
         
         yyaxis left;
         H1 = stackedbar(t1, bar_positive);
-        H1(1).EdgeColor = dodgerblue;
-        H1(1).FaceColor = H1(1).EdgeColor;
-        H1(2).EdgeColor = yellowgreen;
-        H1(2).FaceColor = H1(2).EdgeColor;
-        H1(3).EdgeColor = gold;
-        H1(3).FaceColor = H1(3).EdgeColor;
-        H1(4).EdgeColor = indianred;
-        H1(4).FaceColor = H1(4).EdgeColor;
+        H1(1).FaceColor = dodgerblue;
+        H1(1).EdgeColor = 'none';
+        H1(2).FaceColor = yellowgreen;
+        H1(2).EdgeColor = 'none';
+        H1(3).FaceColor = gold;
+        H1(3).EdgeColor = 'none';
+        H1(4).FaceColor = indianred;
+        H1(4).EdgeColor = 'none';
         
         H3 = bar(bar_negtive, 'stacked');
-        H3(1).EdgeColor = H1(1).EdgeColor;
-        H3(1).FaceColor = H3(1).EdgeColor;
-        H3(2).EdgeColor = H1(4).EdgeColor;
-        H3(2).FaceColor = H3(2).EdgeColor;
-        
+        H3(1).FaceColor = H1(1).FaceColor;
+        H3(1).EdgeColor = 'none';
+        H3(3).FaceColor = H1(4).FaceColor;
+        H3(3).EdgeColor = 'none';
+        H3(2).FaceColor = chocolate3;
+        H3(2).EdgeColor = 'none';
         H4 = plot(t1,[Eload_base, Eload]);
         set(H4(1), 'Color', 'black', 'LineStyle', '-.', 'LineWidth', 1.5, 'Marker', '.', 'MarkerSize', 13);
         set(H4(2), 'Color', 'black', 'LineStyle', '-', 'LineWidth', 1.5, 'Marker', '.', 'MarkerSize', 13);
@@ -218,9 +220,9 @@ if caseType ~=32
         xticks(0:(24 * period / 4) : 24 * period);
         xticklabels({ '0:00','6:00','12:00','18:00','24:00' });
       
-        if IES_no == st + 1
-            le = legend([H1(1), H1(2), H1(3), H1(4), H2, H4(1), H4(2)],...
-                'transformer','CHP','renewable energies','EES','SOC of EES','base electric load','total electric load',...
+        if IES_no == st
+            le = legend([H1(1), H1(2), H1(3), H1(4), H3(2), H2, H4(1), H4(2)],...
+                'transformer','CHP','renewable energies','EES','EB','SOC of EES','base electric load','total electric load',...
                 'Location','northoutside','Orientation','horizontal');
             set(le, 'Box', 'off');
         end
@@ -241,25 +243,27 @@ if caseType ~=32
     for IES_no = st : en
         subplot(en - st + 1, 1, fig)
         hold on
-        bar_positive = [result_CHP_heat(:,IES_no), result_Boiler_heat(:,IES_no), result_HS_discharge(:,IES_no)] ./1000;
+        bar_positive = [result_CHP_heat(:,IES_no), result_Boiler_heat(:,IES_no), result_eBoiler_H(:,IES_no), result_HS_discharge(:,IES_no)] ./1000;
         bar_negtive = -result_HS_charge(:,IES_no) ./1000;
         Hgen = (result_CHP_heat(:,IES_no) + result_Boiler_heat(:,IES_no) + result_HS_discharge(:,IES_no)...
-            - result_HS_charge(:,IES_no)) ./1000;
+            - result_HS_charge(:,IES_no) + result_eBoiler_H(:,IES_no)) ./1000;
         Hload = (result_EH_Lh(:, IES_no) + result_EH_Hdr(:, IES_no)) ./1000;
         Hload_base = result_EH_Lh(:, IES_no) ./1000;
         
         yyaxis left;
         H1 = stackedbar(t1, bar_positive);
-        H1(1).EdgeColor = yellowgreen;
-        H1(1).FaceColor = H1(1).EdgeColor;
-        H1(2).EdgeColor = gold;
-        H1(2).FaceColor = H1(2).EdgeColor;
-        H1(3).EdgeColor = indianred;
-        H1(3).FaceColor = H1(3).EdgeColor;
+        H1(1).FaceColor = yellowgreen;
+        H1(1).EdgeColor = 'none';
+        H1(2).FaceColor = gold;
+        H1(2).EdgeColor = 'none';
+        H1(3).FaceColor = chocolate3;
+        H1(3).EdgeColor = 'none';
+        H1(4).FaceColor = indianred;
+        H1(4).EdgeColor = 'none';
         
         H3 = bar(bar_negtive,'stacked');
-        H3(1).EdgeColor = H1(3).EdgeColor;
-        H3(1).FaceColor = H3(1).EdgeColor;
+        H3(1).FaceColor = H1(4).FaceColor;
+        H3(1).EdgeColor = 'none';
         
         H4 = plot(t1,[Hload_base, Hload]);
         set(H4(1), 'Color', 'black', 'LineStyle', '-.', 'LineWidth', 1.5, 'Marker', '.', 'MarkerSize', 13);
@@ -270,7 +274,7 @@ if caseType ~=32
         yticks(-1 : 0.5 : 2);
         
         yyaxis right;
-        H2 = prettyline(t2,result_HS_SOC(:,IES_no));
+        H2 = prettyline(t2, result_HS_SOC(:,IES_no));
         ylabel('SOC');
         ylim([0,1]);
         yticks(0.1:0.2:1);
@@ -281,8 +285,8 @@ if caseType ~=32
         xticklabels({'0:00','6:00','12:00','18:00','24:00'});
 
         if IES_no == st
-            le = legend([H1(1),H1(2),H1(3),H2,H4(1),H4(2)],...
-                'CHP','GF','TES','SOC of TES','base thermal load','total thermal load',...
+            le = legend([H1(1),H1(2),H1(3),H1(4),H2,H4(1),H4(2)],...
+                'CHP','GF','EB','TES','SOC of TES','base thermal load','total thermal load',...
                 'Location','northoutside','Orientation','horizontal');
             set(le,'Box','off');
         end

@@ -41,10 +41,16 @@ classdef EH_local_170828_v3 < handle
         CHP_G_min;
         CHP_G_ramp
         
-        %锅炉
+        %燃气锅炉
         Boiler_eff;
         Boiler_G_max;
         % Boiler_G_min = 0;
+        
+        % 电锅炉
+        eBoiler_eff;
+        eBoiler_E_max;
+        eBoiler_E_min;
+        eBolier_E_ramp
         
         %联络线电交换和气交换约束
         Ele_max;
@@ -80,6 +86,7 @@ classdef EH_local_170828_v3 < handle
         result_Ele;
         result_CHP_G;
         result_Boiler_G;
+        result_eBoiler_E;
         result_ES_discharge;
         result_ES_charge;
         result_HS_discharge;
@@ -91,7 +98,7 @@ classdef EH_local_170828_v3 < handle
     methods
         
         function obj = EH_local_170828_v3(eleLimit, gasLimit, Le_base, Lh_base, solar_base, wind_base, ...
-                CHP_para, Boiler_para, ES_para, HS_para, dev_load, dev_solar, dev_wind, solar_rate, wind_rate,...
+                CHP_para, Boiler_para, eBoiler_para, ES_para, HS_para, dev_load, dev_solar, dev_wind, solar_rate, wind_rate,...
                 Le_dr_rate, Le_dr_total, Lh_dr_rate, Lh_dr_total, Le_T, Lh_T)
             
             global priceNumbers period
@@ -129,9 +136,15 @@ classdef EH_local_170828_v3 < handle
             obj.CHP_G_min = CHP_para(4) * obj.CHP_G_max;
             obj.CHP_G_ramp = CHP_para(5) * obj.CHP_G_max;
             
-            %锅炉
+            %燃气锅炉
             obj.Boiler_eff = Boiler_para(1);
-            obj.Boiler_G_max = Boiler_para(2) / obj.Boiler_eff;  %10
+            obj.Boiler_G_max = Boiler_para(2) / obj.Boiler_eff;
+            
+            %电锅炉
+            obj.eBoiler_eff = eBoiler_para(1);
+            obj.eBoiler_E_max = eBoiler_para(2);
+            obj.eBoiler_E_min = eBoiler_para(3) * eBoiler_para(2);
+            obj.eBolier_E_ramp = eBoiler_para(4) * eBoiler_para(2);
             
             %电储能和热储能
             obj.ES_totalC = ES_para(1);
@@ -307,10 +320,11 @@ classdef EH_local_170828_v3 < handle
             end
         end
         % 输出优化结果
-        function [Ele, G_CHP, G_Boiler, ES_discharge, ES_charge, HS_discharge, HS_charge, ES_SOC, HS_SOC, Le, Lh, solarP, windP, Edr, Hdr] = getResult(obj)
+        function [Ele, G_CHP, G_Boiler, E_eBoiler, ES_discharge, ES_charge, HS_discharge, HS_charge, ES_SOC, HS_SOC, Le, Lh, solarP, windP, Edr, Hdr] = getResult(obj)
             Ele = obj.result_Ele;
             G_CHP = obj.result_CHP_G;
             G_Boiler = obj.result_Boiler_G;
+            E_eBoiler = obj.result_eBoiler_E;
             ES_discharge = obj.result_ES_discharge;
             ES_charge = obj.result_ES_charge;
             HS_discharge = obj.result_HS_discharge;
@@ -349,9 +363,10 @@ classdef EH_local_170828_v3 < handle
             
             global period
             time = 24 * period - t_current + 1; %总时间段
-            var = time * 9; %总变量数
+            var = time * 10; %总变量数
             %第1,2,3组time是购电量、CHP购气量、锅炉购气量，第4-7组time是储电、储热的放、充功率
             %第8-9组是当前电和热的可平移负荷水平
+            %第10组是电锅炉购电量
             
             %求一次项系数f 是个列向量
             f = zeros(var, 1);
@@ -373,6 +388,7 @@ classdef EH_local_170828_v3 < handle
                 ub(time * 4 + i, 1) = obj.ES_Pmax;
                 ub(time * 5 + i, 1) = obj.HS_Hmax;    
                 ub(time * 6 + i, 1) = obj.HS_Hmax;
+                ub(time * 9 + i, 1) = obj.eBoiler_E_max;
             end
             ub(time * 7 + 1:time * 8, 1) = obj.Le_T(t_current: end);
             ub(time * 8 + 1:time * 9, 1) = obj.Lh_T(t_current: end);
@@ -380,6 +396,7 @@ classdef EH_local_170828_v3 < handle
             for i = 1 : time
                 lb(i, 1) = obj.Ele_min;
                 lb(time + i, 1) = obj.CHP_G_min;
+                lb(time * 9 + i, 1) = obj.eBoiler_E_min;
             end
             if length(conditionEle)>1
                 ub(1:length(conditionEle),1) = conditionEle;
@@ -398,18 +415,20 @@ classdef EH_local_170828_v3 < handle
             beq_Ebus = - obj.Le_pre(t_current : 24*period) + obj.windP_pre(t_current : 24*period) + obj.solarP_pre(t_current : 24*period); %Le的size不变，但是取部分值
             beq_Hbus = - obj.Lh_pre(t_current : 24*period); %Lh的size不变，但是取部分值
             for i=1:time
-                Aeq_Ebus(i, i) = - obj.Ele_eff; %线损率
+                Aeq_Ebus(i, i) = - obj.Ele_eff; % 线损率
                 Aeq_Ebus(i, time + i) = - obj.CHP_GE_eff;
-                Aeq_Ebus(i, time * 3 + i) = - 1; %放电
-                Aeq_Ebus(i, time * 4 + i) = 1; %充电
-                Aeq_Ebus(i, time * 7 + i) = 1;
+                Aeq_Ebus(i, time * 3 + i) = - 1; %放 电
+                Aeq_Ebus(i, time * 4 + i) = 1; % 充电
+                Aeq_Ebus(i, time * 7 + i) = 1; % 可平移电负荷
+                Aeq_Ebus(I, time * 9 + i) = 1; % 电锅炉
             end
             for i=1:time
-                Aeq_Hbus(i,time + i) = - obj.CHP_GH_eff;
-                Aeq_Hbus(i,time * 2 + i) = - obj.Boiler_eff;
-                Aeq_Hbus(i,time * 5 + i) = - 1; %放热
-                Aeq_Hbus(i,time * 6 + i) = 1; %充热
-                Aeq_Hbus(i,time * 8 + i) = 1;
+                Aeq_Hbus(i, time + i) = - obj.CHP_GH_eff;
+                Aeq_Hbus(i, time * 2 + i) = - obj.Boiler_eff;
+                Aeq_Hbus(i, time * 5 + i) = - 1; %放热
+                Aeq_Hbus(i, time * 6 + i) = 1; %充热
+                Aeq_Hbus(i, time * 8 + i) = 1; %可平移热负荷
+                Aeq_Hbus(i, time * 9 + i) = -obj.eBoiler_eff; % 电锅炉产热
             end
             
             %可平移负荷约束
@@ -477,11 +496,17 @@ classdef EH_local_170828_v3 < handle
             end
             
             %CHP机组爬坡率约束
-            A_ramp_tmp = diag(ones(1, time))-diag(ones(1, time -1),1);
-            A_ramp_tmp = A_ramp_tmp(1: end -1,:);
-            A_ramp = zeros(time -1, var); 
-            A_ramp(time * 1 + 1 : time * 2, :) = A_ramp_tmp;
-            b_ramp = obj.CHP_G_ramp * ones(time-1, 1);
+            A_ramp_normal = diag(ones(1, time))-diag(ones(1, time -1),1);
+            A_ramp_normal = A_ramp_normal(1: end -1,:);
+            tmp_row = time - 1;
+            A_ramp = zeros(tmp_row * 2, var); % 分别是CHP机组、电锅炉机组爬坡率约束.
+            
+            A_ramp(1: tmp_row, time * 1 + 1 : time * 2) = A_ramp_normal;
+            A_ramp(tmp_row + 1: tmp_row * 2, time * 9 + 1 : time * 10) = A_ramp_normal;
+            
+            b_ramp = [obj.CHP_G_ramp * ones(tmp_row, 1); obj.eBolier_E_ramp * ones(tmp_row, 1)];
+            %电锅炉爬坡率约束
+            
             %归纳所有线性约束
             %等式约束包括：电、热平衡约束（改为不等式），电、热储能平衡性约束（改为不等式）
             %不等式约束包括：SOC约束，购气量和的约束，（爬坡率约束）
@@ -504,7 +529,7 @@ classdef EH_local_170828_v3 < handle
         function [f, intcon, A, b, Aeq, beq, lb, ub, A_eleLimit_total] = MilpMatrix(obj, Gprice, t_current)
             global period elePrice
             time = 24 * period - t_current + 1;
-            var = time * 13; %总变量数
+            var = time * 14; %总变量数
             intcon = [time * 9 + 1 : time * 13];%charge/dischage binary
             
             %求一次项系数f 是个列向量
@@ -530,6 +555,7 @@ classdef EH_local_170828_v3 < handle
                 ub(time * 10 + i, 1) = 1;
                 ub(time * 11 + i, 1) = 1;
                 ub(time * 12 + i, 1) = 1;
+                ub(time * 13 + i, 1) = obj.eBoiler_E_max;
             end
             ub(time * 7 + 1:time * 8, 1) = obj.Le_T(t_current: end);
             ub(time * 8 + 1:time * 9, 1) = obj.Lh_T(t_current: end);
@@ -537,6 +563,7 @@ classdef EH_local_170828_v3 < handle
             for i = 1 : time
                 lb(i, 1) = obj.Ele_min;
                 lb(time + i, 1) = obj.CHP_G_min;
+                lb(time * 13 + i, 1) = obj.eBolier_E_min;
             end
             
             %等式约束包括：电、热平衡约束（供大于求，改为不等式）；电、热储能平衡性约束（改为不等式约束？）
@@ -551,6 +578,7 @@ classdef EH_local_170828_v3 < handle
                 Aeq_Ebus(i,time * 3 + i) = - 1; %放电
                 Aeq_Ebus(i,time * 4 + i) = 1; %充电
                 Aeq_Ebus(i,time * 7 + i) = 1;
+                Aeq_Ebus(i,time * 13 + i) = 1;
             end
             for i=1:time
                 Aeq_Hbus(i,time + i) = - obj.CHP_GH_eff;
@@ -558,6 +586,7 @@ classdef EH_local_170828_v3 < handle
                 Aeq_Hbus(i,time * 5 + i) = - 1; %放热
                 Aeq_Hbus(i,time * 6 + i) = 1; %充热
                 Aeq_Hbus(i,time * 8 + i) = 1;
+                Aeq_Hbus(i,time * 13 + i) = - obj.eBolier_eff;
             end
             
             %可平移负荷约束
@@ -678,13 +707,18 @@ classdef EH_local_170828_v3 < handle
                 A_Gmax(i, time + i) = 1;
                 A_Gmax(i, time * 2 + i) = 1;
             end
-            %CHP机组爬坡率约束
-            A_ramp_tmp = diag(ones(1, time))-diag(ones(1, time -1),1);
-            A_ramp_tmp = A_ramp_tmp(1: end -1,:);
-            A_ramp = zeros(time -1, var); 
-            A_ramp(time * 1 + 1 : time * 2, :) = A_ramp_tmp;
-            b_ramp = obj.CHP_G_ramp * ones(time-1, 1);
-           
+            
+            %爬坡率约束
+            A_ramp_normal = diag(ones(1, time))-diag(ones(1, time -1),1);
+            A_ramp_normal = A_ramp_normal(1: end -1,:);
+            tmp_row = time - 1;
+            A_ramp = zeros(tmp_row * 2, var); % 分别是CHP机组、电锅炉机组爬坡率约束.
+            
+            A_ramp(1: tmp_row, time * 1 + 1 : time * 2) = A_ramp_normal;
+            A_ramp(tmp_row + 1: tmp_row * 2, time * 13 + 1 : time * 14) = A_ramp_normal;
+            
+            b_ramp = [obj.CHP_G_ramp * ones(tmp_row, 1); obj.eBolier_E_ramp * ones(tmp_row, 1)];
+            
             %归纳所有线性约束
             %等式约束包括：电、热平衡约束（改为不等式），电、热储能平衡性约束（改为不等式）
             %不等式约束包括：SOC约束，购气量和的约束，（爬坡率约束）
@@ -705,7 +739,7 @@ classdef EH_local_170828_v3 < handle
             
             global period elePrice
             time = 24 * period - t_current + 1;
-            var = time * 9; %总变量数
+            var = time * 10; %总变量数
 
             %求一次项系数f 是个列向量
             f = zeros(var, 1);
@@ -726,12 +760,14 @@ classdef EH_local_170828_v3 < handle
                 ub(time * 4 + i, 1) = obj.ES_Pmax;
                 ub(time * 5 + i, 1) = obj.HS_Hmax;
                 ub(time * 6 + i, 1) = obj.HS_Hmax; 
+                ub(time * 9 + i, 1) = obj.eBoiler_E_max;
             end
             ub(time * 7 + 1:time * 8, 1) = obj.Le_T(t_current: end);
             ub(time * 8 + 1:time * 9, 1) = obj.Lh_T(t_current: end);
             for i = 1 : time
                 lb(i, 1) = obj.Ele_min;
                 lb(time + i, 1) = obj.CHP_G_min;
+                lb(time * 9 + i, 1) = obj.eBoiler_E_min;
             end
             
             %等式约束包括：电、热平衡约束（供大于求，改为不等式）；电、热储能平衡性约束（改为不等式约束？）
@@ -746,6 +782,7 @@ classdef EH_local_170828_v3 < handle
                 Aeq_Ebus(i,time * 3 + i) = - 1; %放电
                 Aeq_Ebus(i,time * 4 + i) = 1; %充电
                 Aeq_Ebus(i,time * 7 + i) = 1;
+                Aeq_Ebus(i,time * 9 + i) = 1;
             end
             for i=1:time
                 Aeq_Hbus(i,time + i) = - obj.CHP_GH_eff;
@@ -753,6 +790,7 @@ classdef EH_local_170828_v3 < handle
                 Aeq_Hbus(i,time * 5 + i) = - 1; %放热
                 Aeq_Hbus(i,time * 6 + i) = 1; %充热
                 Aeq_Hbus(i,time * 8 + i) = 1;
+                Aeq_Hbus(i,time * 9 + i) = - obj.eBoiler_eff;
             end
             
             %可平移负荷约束
@@ -820,18 +858,20 @@ classdef EH_local_170828_v3 < handle
                 A_Gmax(i, time * 2 + i) = 1;
             end
            
-            %CHP机组爬坡率约束
-            A_ramp_tmp = diag(ones(1, time))-diag(ones(1, time -1),1);
-            A_ramp_tmp = A_ramp_tmp(1: end -1,:);
-            A_ramp = zeros(time -1, var); 
-            A_ramp(:, time * 1 + 1 : time * 2) = A_ramp_tmp;
-            b_ramp = obj.CHP_G_ramp * ones(time-1, 1);
+             A_ramp_normal = diag(ones(1, time))-diag(ones(1, time -1),1);
+            A_ramp_normal = A_ramp_normal(1: end -1,:);
+            tmp_row = time - 1;
+            A_ramp = zeros(tmp_row * 2, var); % 分别是CHP机组、电锅炉机组爬坡率约束.
             
+            A_ramp(1: tmp_row, time * 1 + 1 : time * 2) = A_ramp_normal;
+            A_ramp(tmp_row + 1: tmp_row * 2, time * 9 + 1 : time * 10) = A_ramp_normal;
+            
+            b_ramp = [obj.CHP_G_ramp * ones(tmp_row, 1); obj.eBolier_E_ramp * ones(tmp_row, 1)];
             %归纳所有线性约束
             %等式约束包括：电、热平衡约束（改为不等式），电、热储能平衡性约束（改为不等式）
             %不等式约束包括：SOC约束，购气量和的约束，（爬坡率约束）
-            Aeq=[Aeq_Edr; Aeq_Hdr;Aeq_Hbus; Aeq_ES; Aeq_HS; ];
-            beq=[beq_Edr; beq_Hdr;beq_Hbus';beq_ES; beq_HS;];
+            Aeq=[Aeq_Edr; Aeq_Hdr; Aeq_Hbus; Aeq_ES; Aeq_HS; ];
+            beq=[beq_Edr; beq_Hdr; beq_Hbus';beq_ES; beq_HS;];
             A=[Aeq_Ebus;  A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc; A_Gmax; A_ramp; -A_ramp];
             b=[beq_Ebus'; b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc; b_Gmax; b_ramp; b_ramp];
 
@@ -846,9 +886,9 @@ classdef EH_local_170828_v3 < handle
             global period 
             time = 24 * period - t_current + 1; %总时间段
             if nargin < 5%LP
-                var = time * 9;
+                var = time * 10;
             else%MILP
-                var = time * 13;
+                var = time * 14;
             end
             obj.result_Ele(t_current) = x(1 + (IES_no - 1) * var);
             obj.result_CHP_G(t_current) = x(time + 1 + (IES_no - 1) * var);
@@ -859,6 +899,7 @@ classdef EH_local_170828_v3 < handle
             obj.result_HS_charge(t_current) = x(time * 6 + 1 + (IES_no - 1) * var);
             obj.result_E_dr(t_current)=  x(time * 7 + 1 + (IES_no - 1) * var );
             obj.result_H_dr(t_current) = x(time * 8 + 1 + (IES_no - 1) * var);
+            obj.result_eBoiler_E(t_current) = x(time * 9 + 1 + (IES_no - 1) * var) ;
             %更新储能状态
             obj.ES_SOC(t_current+1) = obj.ES_selfd * obj.ES_SOC(t_current) - obj.result_ES_discharge(t_current) / obj.ES_eff / obj.ES_totalC + obj.result_ES_charge(t_current) * obj.ES_eff / obj.ES_totalC;
             obj.HS_SOC(t_current+1) = obj.HS_selfd * obj.HS_SOC(t_current) - obj.result_HS_discharge(t_current) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(t_current) * obj.HS_eff / obj.HS_totalC;
