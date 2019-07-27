@@ -102,8 +102,11 @@ if caseType ~=32
     
     % 计算
     %计算总成本 按网价计算
-    cost_clear =  (result_Ele' * priceArray + sum(result_Gas)' * gasPrice1) / period
+    if exist('priceArray', 'var')
+        cost_clear =  (result_Ele' * priceArray + sum(result_Gas)' * gasPrice1) / period;
+    end
     cost_utility = (result_Ele' *  elePrice + sum(result_Gas)' * gasPrice1) / period;
+    
     totalCost = sum(cost_utility)
     % --------------------------------------绘图--------------------------------------
     t1 = 1 : 1 : 24 * period;

@@ -3,7 +3,7 @@ caseType = 2;
 para_init;
 global period couldExport
 temporal = 24* period;
-   
+isCentral = 1;
 for pt = 1: temporal
     EH1.predict(pt);
     EH2.predict(pt);

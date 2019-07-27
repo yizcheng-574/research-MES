@@ -31,11 +31,15 @@ classdef EH_local_170828_v3 < handle
         Le_drP_total;
         Lh_drP_rate;
         Lh_drP_total;
+        Le_T;
+        Lh_T;
+        
         %CHP的参数
         CHP_GE_eff;
         CHP_GH_eff;
         CHP_G_max;
         CHP_G_min;
+        CHP_G_ramp
         
         %锅炉
         Boiler_eff;
@@ -88,7 +92,7 @@ classdef EH_local_170828_v3 < handle
         
         function obj = EH_local_170828_v3(eleLimit, gasLimit, Le_base, Lh_base, solar_base, wind_base, ...
                 CHP_para, Boiler_para, ES_para, HS_para, dev_load, dev_solar, dev_wind, solar_rate, wind_rate,...
-                Le_dr_rate, Le_dr_total, Lh_dr_rate, Lh_dr_total)
+                Le_dr_rate, Le_dr_total, Lh_dr_rate, Lh_dr_total, Le_T, Lh_T)
             
             global priceNumbers period
             
@@ -115,17 +119,19 @@ classdef EH_local_170828_v3 < handle
             obj.Le_drP_total = Le_dr_total;
             obj.Lh_drP_rate = Lh_dr_rate;
             obj.Lh_drP_total = Lh_dr_total;
+            obj.Le_T = Le_T * obj.Le_drP_rate;
+            obj.Lh_T = Lh_T * obj.Lh_drP_rate;
             
             %CHP的参数
             obj.CHP_GE_eff = CHP_para(1);
             obj.CHP_GH_eff = CHP_para(2);
             obj.CHP_G_max = CHP_para(3) / obj.CHP_GE_eff; %由额定电功率得到最大购气量
             obj.CHP_G_min = CHP_para(4) * obj.CHP_G_max;
+            obj.CHP_G_ramp = CHP_para(5) * obj.CHP_G_max;
             
             %锅炉
             obj.Boiler_eff = Boiler_para(1);
             obj.Boiler_G_max = Boiler_para(2) / obj.Boiler_eff;  %10
-            % Boiler_G_min = 0;
             
             %电储能和热储能
             obj.ES_totalC = ES_para(1);
@@ -220,25 +226,6 @@ classdef EH_local_170828_v3 < handle
             obj.windP_pre(obj.windP_pre > obj.windP_rate) = obj.windP_rate;
         end
         
-        
-        
-        %通过多次解最优化，构造投标函数
-        %{
-        function demand_curve_result = curveGenerate(obj, Eprice, Gprice, t_current) %接收电价、气价、当前时间
-            % predict(obj, t_current); %更新本地的负荷预测
-            global minMarketPrice step priceNumbers
-            
-            for i = 1: 1 : priceNumbers
-                Eprice(t_current) = minMarketPrice + (i-1) * step;
-                [x,~,~,~,~] = localOptimal(obj, Eprice, Gprice, t_current, 9e9); % conditionEle = 9e9
-                obj.demand_curve(i) = x(1);
-            end
-            
-            demand_curve_result = obj.demand_curve;
-        end
-        %}
-        
-        
         %接收市场出清价格，做自治优化，更新自身状态
         function [x,fval,exitflag,output,lambda] = handlePrice(obj, Eprice, Gprice, t_current) %这里的x随着t_current会越来越少
             [x,fval,exitflag,output,lambda] = localOptimal(obj, Eprice, Gprice, t_current, 9e9); % conditionEle = 9e9
@@ -272,7 +259,7 @@ classdef EH_local_170828_v3 < handle
         
         % 接收市场出清价格、出清功率，在保持出清功率不变的情况下，求解最优化
         % 只更新当前状态
-        function [x,fval,exitflag,output,lambda] = conditionHandlePrice_2(obj, Eprice, Gprice, t_current, clearDemand) %这里的x随着t_current会越来越少
+        function [x,fval,exitflag,output,lambda] = conditionHandlePrice_2(obj, Eprice, Gprice, t_current, clearDemand) % 这里的x随着t_current会越来越少
             global period
             conditionEle = clearDemand;
             
@@ -380,21 +367,19 @@ classdef EH_local_170828_v3 < handle
             lb = zeros(var, 1);
             for i = 1 : time
                 ub(i, 1) = obj.Ele_max;
-                ub(time+i, 1) = obj.CHP_G_max;
-                ub(time*2+i, 1) = obj.Boiler_G_max;
-                ub(time*3+i, 1) = obj.ES_Pmax;
-                ub(time*4+i, 1) = obj.ES_Pmax;
-                ub(time*5+i, 1) = obj.HS_Hmax;
-                ub(time*6+i, 1) = obj.HS_Hmax;
-                ub(time*7+i, 1) = obj.Le_drP_rate;
-                ub(time*8+i, 1) = obj.Lh_drP_rate;
-%                 ub(time*7+i, 1) = 1e6;
-%                 ub(time*8+i, 1) = 1e6;
+                ub(time + i, 1) = obj.CHP_G_max;
+                ub(time * 2 + i, 1) = obj.Boiler_G_max;
+                ub(time * 3 + i, 1) = obj.ES_Pmax;
+                ub(time * 4 + i, 1) = obj.ES_Pmax;
+                ub(time * 5 + i, 1) = obj.HS_Hmax;    
+                ub(time * 6 + i, 1) = obj.HS_Hmax;
             end
+            ub(time * 7 + 1:time * 8, 1) = obj.Le_T(t_current: end);
+            ub(time * 8 + 1:time * 9, 1) = obj.Lh_T(t_current: end);
+
             for i = 1 : time
                 lb(i, 1) = obj.Ele_min;
-                lb(time+i, 1) = obj.CHP_G_min;
-
+                lb(time + i, 1) = obj.CHP_G_min;
             end
             if length(conditionEle)>1
                 ub(1:length(conditionEle),1) = conditionEle;
@@ -406,8 +391,6 @@ classdef EH_local_170828_v3 < handle
                 end
             end
             
-            
-            
             %等式约束包括：电、热平衡约束（供大于求，改为不等式）；电、热储能平衡性约束（改为不等式约束？）
             %电、热平衡约束
             Aeq_Ebus = zeros(time, var);
@@ -415,18 +398,18 @@ classdef EH_local_170828_v3 < handle
             beq_Ebus = - obj.Le_pre(t_current : 24*period) + obj.windP_pre(t_current : 24*period) + obj.solarP_pre(t_current : 24*period); %Le的size不变，但是取部分值
             beq_Hbus = - obj.Lh_pre(t_current : 24*period); %Lh的size不变，但是取部分值
             for i=1:time
-                Aeq_Ebus(i,i) = - obj.Ele_eff; %线损率
-                Aeq_Ebus(i,time+i) = - obj.CHP_GE_eff;
-                Aeq_Ebus(i,time*3+i) = - 1; %放电
-                Aeq_Ebus(i,time*4+i) = 1; %充电
-                Aeq_Ebus(i,time*7+i) = 1;
+                Aeq_Ebus(i, i) = - obj.Ele_eff; %线损率
+                Aeq_Ebus(i, time + i) = - obj.CHP_GE_eff;
+                Aeq_Ebus(i, time * 3 + i) = - 1; %放电
+                Aeq_Ebus(i, time * 4 + i) = 1; %充电
+                Aeq_Ebus(i, time * 7 + i) = 1;
             end
             for i=1:time
-                Aeq_Hbus(i,time+i) = - obj.CHP_GH_eff;
-                Aeq_Hbus(i,time*2+i) = - obj.Boiler_eff;
-                Aeq_Hbus(i,time*5+i) = - 1; %放热
-                Aeq_Hbus(i,time*6+i) = 1; %充热
-                Aeq_Hbus(i,time*8+i) = 1;
+                Aeq_Hbus(i,time + i) = - obj.CHP_GH_eff;
+                Aeq_Hbus(i,time * 2 + i) = - obj.Boiler_eff;
+                Aeq_Hbus(i,time * 5 + i) = - 1; %放热
+                Aeq_Hbus(i,time * 6 + i) = 1; %充热
+                Aeq_Hbus(i,time * 8 + i) = 1;
             end
             
             %可平移负荷约束
@@ -454,7 +437,7 @@ classdef EH_local_170828_v3 < handle
                 Aeq_HS(1, time * 5 + i) = obj.HS_selfd ^ (time - i) / obj.HS_eff; %放热
                 Aeq_HS(1, time * 6 + i) = - obj.HS_selfd ^ (time - i) * obj.HS_eff; %充热
             end
-             %不等式约束包括：SOC约束；购气量和的约束；（爬坡率约束）
+            %不等式约束包括：SOC约束；购气量和的约束；（爬坡率约束）
             %SOC约束 A1是上限，A2是下限
             A1_Esoc = zeros(time, var);
             b1_Esoc = zeros(time, 1);
@@ -493,27 +476,20 @@ classdef EH_local_170828_v3 < handle
                 A_Gmax(i, time*2+i) = 1;
             end
             
+            %CHP机组爬坡率约束
+            A_ramp_tmp = diag(ones(1, time))-diag(ones(1, time -1),1);
+            A_ramp_tmp = A_ramp_tmp(1: end -1,:);
+            A_ramp = zeros(time -1, var); 
+            A_ramp(time * 1 + 1 : time * 2, :) = A_ramp_tmp;
+            b_ramp = obj.CHP_G_ramp * ones(time-1, 1);
             %归纳所有线性约束
             %等式约束包括：电、热平衡约束（改为不等式），电、热储能平衡性约束（改为不等式）
             %不等式约束包括：SOC约束，购气量和的约束，（爬坡率约束）
             Aeq=[Aeq_Edr; Aeq_Hdr; Aeq_Hbus; Aeq_ES; Aeq_HS;];
             beq=[beq_Edr; beq_Hdr; beq_Hbus';beq_ES; beq_HS;];
-            A=[ Aeq_Ebus;       A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
-            b=[ beq_Ebus';      b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
-             
-            %             %fmincon需要列出一个初始可行解
-            %             x0 = zeros(var,1);
-            %             for i = 1 : time
-            %                 x0(i) = min(-beq_Ebus(i), obj.Ele_max); % 购电量，优先线路购电
-            %                 x0(time+i) = (-beq_Ebus(i) - x0(i)) / obj.CHP_GE_eff; % CHP购气量，不够的电由CHP发，顺便发热
-            %                 x0(time*2+i) = max(-beq_Hbus(i) - x0(time+i)*obj.CHP_GH_eff , 0) / obj.Boiler_eff; % boiler购气量，不够的热由锅炉发
-            %             %     x0(time*3+i, 1) = 0;
-            %             %     x0(time*4+i, 1) = 0;
-            %             %     x0(time*5+i, 1) = 0;
-            %             %     x0(time*6+i, 1) = 0;
-            %             end
-            
-            
+            A=[ Aeq_Ebus; A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc; A_Gmax; A_ramp; -A_ramp];
+            b=[ beq_Ebus'; b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc; b_Gmax; b_ramp; b_ramp];
+ 
             [x,fval,exitflag,output,lambda] = linprog(f,A,b,Aeq,beq,lb,ub);
             
             %             options = optimoptions('fmincon','MaxFunEvals',1000000);
@@ -550,14 +526,14 @@ classdef EH_local_170828_v3 < handle
                 ub(time * 4 + i, 1) = obj.ES_Pmax;
                 ub(time * 5 + i, 1) = obj.HS_Hmax;
                 ub(time * 6 + i, 1) = obj.HS_Hmax;
-                ub(time * 7 + i, 1) = obj.Le_drP_rate;
-                ub(time * 8 + i, 1) = obj.Lh_drP_rate;
                 ub(time * 9 + i, 1) = 1;
                 ub(time * 10 + i, 1) = 1;
                 ub(time * 11 + i, 1) = 1;
                 ub(time * 12 + i, 1) = 1;
-
             end
+            ub(time * 7 + 1:time * 8, 1) = obj.Le_T(t_current: end);
+            ub(time * 8 + 1:time * 9, 1) = obj.Lh_T(t_current: end);
+            
             for i = 1 : time
                 lb(i, 1) = obj.Ele_min;
                 lb(time + i, 1) = obj.CHP_G_min;
@@ -702,14 +678,20 @@ classdef EH_local_170828_v3 < handle
                 A_Gmax(i, time + i) = 1;
                 A_Gmax(i, time * 2 + i) = 1;
             end
+            %CHP机组爬坡率约束
+            A_ramp_tmp = diag(ones(1, time))-diag(ones(1, time -1),1);
+            A_ramp_tmp = A_ramp_tmp(1: end -1,:);
+            A_ramp = zeros(time -1, var); 
+            A_ramp(time * 1 + 1 : time * 2, :) = A_ramp_tmp;
+            b_ramp = obj.CHP_G_ramp * ones(time-1, 1);
            
             %归纳所有线性约束
             %等式约束包括：电、热平衡约束（改为不等式），电、热储能平衡性约束（改为不等式）
             %不等式约束包括：SOC约束，购气量和的约束，（爬坡率约束）
             Aeq=[Aeq_Edr; Aeq_Hdr;Aeq_Hbus; Aeq_ES; Aeq_HS; ];
             beq=[beq_Edr; beq_Hdr;beq_Hbus';beq_ES; beq_HS;];
-            A=[Aeq_Ebus;      A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax; A_binary];
-            b=[beq_Ebus';        b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax; b_binary];
+            A=[Aeq_Ebus; A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc; A_Gmax; A_binary; A_ramp; -A_ramp];
+            b=[beq_Ebus'; b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc; b_Gmax; b_binary; b_ramp; b_ramp];
 
            % 需要额外增加一个购电量的上、下限约束
             A_eleLimit_total = zeros(time, var);
@@ -743,10 +725,10 @@ classdef EH_local_170828_v3 < handle
                 ub(time * 3 + i, 1) = obj.ES_Pmax;
                 ub(time * 4 + i, 1) = obj.ES_Pmax;
                 ub(time * 5 + i, 1) = obj.HS_Hmax;
-                ub(time * 6 + i, 1) = obj.HS_Hmax;
-                ub(time * 7 + i, 1) = obj.Le_drP_rate;
-                ub(time * 8 + i, 1) = obj.Lh_drP_rate;
+                ub(time * 6 + i, 1) = obj.HS_Hmax; 
             end
+            ub(time * 7 + 1:time * 8, 1) = obj.Le_T(t_current: end);
+            ub(time * 8 + 1:time * 9, 1) = obj.Lh_T(t_current: end);
             for i = 1 : time
                 lb(i, 1) = obj.Ele_min;
                 lb(time + i, 1) = obj.CHP_G_min;
@@ -838,13 +820,20 @@ classdef EH_local_170828_v3 < handle
                 A_Gmax(i, time * 2 + i) = 1;
             end
            
+            %CHP机组爬坡率约束
+            A_ramp_tmp = diag(ones(1, time))-diag(ones(1, time -1),1);
+            A_ramp_tmp = A_ramp_tmp(1: end -1,:);
+            A_ramp = zeros(time -1, var); 
+            A_ramp(:, time * 1 + 1 : time * 2) = A_ramp_tmp;
+            b_ramp = obj.CHP_G_ramp * ones(time-1, 1);
+            
             %归纳所有线性约束
             %等式约束包括：电、热平衡约束（改为不等式），电、热储能平衡性约束（改为不等式）
             %不等式约束包括：SOC约束，购气量和的约束，（爬坡率约束）
             Aeq=[Aeq_Edr; Aeq_Hdr;Aeq_Hbus; Aeq_ES; Aeq_HS; ];
             beq=[beq_Edr; beq_Hdr;beq_Hbus';beq_ES; beq_HS;];
-            A=[Aeq_Ebus;  A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc;  A_Gmax];
-            b=[beq_Ebus'; b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc;  b_Gmax];
+            A=[Aeq_Ebus;  A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc; A_Gmax; A_ramp; -A_ramp];
+            b=[beq_Ebus'; b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc; b_Gmax; b_ramp; b_ramp];
 
            % 需要额外增加一个购电量的上、下限约束
             A_eleLimit_total = zeros(time, var);

@@ -22,29 +22,33 @@ end
 load '../gridPriceRecord'
 Le_max = [2 , 1.3 , 1.5] * 1000;
 Lh_max = [1 , 2 , 2] * 1000;
-Le_dr_rate = [0.2, 0, 0.1];
-Lh_dr_rate = [0.2, 0, 0.1];
-% Le_dr_rate = [0 0 0];
-% Lh_dr_rate = [0 0 0];
-
-solar_max = [1 , 0.5 , 0.5] * 1000;
-wind_max = [0.3 , 2 , 0.1] * 1000;
+Le_dr_rate = [0.1, 0.1, 0.2];
+Lh_dr_rate = [0.2, 0, 0];
+solar_max = [0.4 , 0.3 , 0.5] * 1000;
+wind_max = [0.2 , 0.3 , 0.1] * 1000;
 % IES1 工业区，电热负荷都比较平，白天稍高，热大于电，负荷型
 EH1_Le = loadValue(:,94); % 对应134号公司 %/10
 EH1_Lh = loadValue(:,143); % 对应223号公司 %/5
 EH1_solarP = solarValue(:,3) ; %*1
 EH1_windP = windValue(:,3); %*2
+EH1_Le_flag = ones(1, 24); %表示可平移负荷区间
+EH1_Lh_flag = ones(1, 24);
 
 % IES2 商务区，电热负荷白天高，晚上很低，热电相当，电有驼峰，负荷型
 EH2_Le = loadValue(:,88) ; % 对应127号公司 %/8
 EH2_Lh = loadValue(:,91) ; % 对应130号公司 %/6
 EH2_solarP = solarValue(:,1) ;
-%         EH2_windP = windValue(:,1);
 EH2_windP = [windValue(12:end,1);windValue(1:11,1)];
+EH2_Le_flag = zeros(1, 24); EH2_Le_flag(1:6) = ones(1, 6);  EH2_Le_flag(20:24) = ones(1, 5);
+EH2_Lh_flag = zeros(1, 24); % 商业区没有可平移热负荷
+
 % IES3 住宅区，电热负荷白天低，晚上高，热电相当，资源丰富型
 if period == 1
     EH3_Le = loadValue(:,172) ; % 对应273号公司 %/5
-    EH3_Lh = loadValue(:,174) ; % 对应275号公司 %/6
+    EH3_Lh = circshift(loadValue(:, 68), 15); 
+    EH3_Le_flag = zeros(1, 24); EH3_Le_flag(9:20) = ones(1, 12); 
+    EH3_Lh_flag = zeros(1, 24); % 住宅区没有可平移热负荷
+%     EH3_Lh = loadValue(:,174) ;
 elseif period == 4
     EH3_Le = loadValue(:,169) ; % 对应273号公司
     EH3_Lh = loadValue(:,171) ; % 对应275号公司
@@ -115,13 +119,13 @@ gasLimit3 = 1e6;
 % gasLimit_total = 150; %暂时无法对天然气总量做单独约束，只能默认是各支线约束的和
 
 %CHP的参数
-CHP1_para = [0.30, 0.42, 1400, 0]; % CHP_GE_eff_in, CHP_GH_eff_in, CHP_Prate_in, CHP_Pmin_Rate_in
-CHP2_para = [0.35, 0.45, 1200, 0];
+CHP1_para = [0.30, 0.42, 1400, 0, 0.6]; % CHP_GE_eff_in, CHP_GH_eff_in, CHP_Prate_in, CHP_Pmin_Rate_in, CHP_ramp_rate
+CHP2_para = [0.35, 0.45, 1200, 0, 0.6];
 
 if caseType == 31
-    CHP3_para = [0.28, 0.56, 1, 0];
+    CHP3_para = [0.28, 0.56, 1, 0.2, 0.5];
 else
-    CHP3_para = [0.28, 0.56, 1200, 0];
+    CHP3_para = [0.28, 0.56, 1200, 0, 0.5];
 end
 
 %锅炉
@@ -143,14 +147,14 @@ Boiler3_para = [0.90; Lh_max(3)/0.9];
 if caseType == 32
     ES1_para = [2000, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
 else
-    ES1_para = [1, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
+    ES1_para = [2000, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
 end
 ES2_para = [1000, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
-ES3_para = [2000, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
+ES3_para = [500, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
 % HS_totalC_in, HS_maxSOC_in, HS_minSOC_in, HS_currentSOC_in, HS_targetSOC_in, HS_chargeTime, HS_eff_in
 HS1_para = [1000, 0.9, 0.1, 0.6, 0.5, 5, 0.9];
 HS2_para = [1000, 0.9, 0.1, 0.6, 0.5, 5, 0.9];
-HS3_para = [1, 0.9, 0.1, 0.5, 0.6, 0.5, 0.9];
+HS3_para = [1000, 0.9, 0.1, 0.5, 0.6, 0.5, 0.9];
 
 % 负荷和风光预测误差
 dev_L = 3/100; %百分数 1
@@ -167,19 +171,19 @@ EH1_Le_drP_rate = Le_max(1) * Le_dr_rate(1);
 EH2_Le_drP_rate = Le_max(2) * Le_dr_rate(2);
 EH3_Le_drP_rate = Le_max(3) * Le_dr_rate(3);
 %各IES总可平移负荷电量
-EH1_Le_drP_total = EH1_Le_drP_rate * 5;
-EH2_Le_drP_total = EH2_Le_drP_rate * 5;
-EH3_Le_drP_total = EH3_Le_drP_rate * 5;
-
+EH1_Le_drP_total = EH1_Le_drP_rate * 4;
+EH2_Le_drP_total = EH2_Le_drP_rate * 4;
+EH3_Le_drP_total = EH3_Le_drP_rate * 4;
+%可平移负荷时间
 %热
 %各IES各时段最大可平移负荷功率
 EH1_Lh_drP_rate = Lh_max(1) * Lh_dr_rate(1);
 EH2_Lh_drP_rate = Lh_max(2) * Lh_dr_rate(2);
 EH3_Lh_drP_rate = Lh_max(3) * Lh_dr_rate(3);
 %各IES总可平移负荷电量
-EH1_Lh_drP_total = EH1_Lh_drP_rate * 5;
-EH2_Lh_drP_total = EH2_Lh_drP_rate * 5;
-EH3_Lh_drP_total = EH3_Lh_drP_rate * 5;
+EH1_Lh_drP_total = EH1_Lh_drP_rate * 4;
+EH2_Lh_drP_total = EH2_Lh_drP_rate * 4;
+EH3_Lh_drP_total = EH3_Lh_drP_rate * 4;
 
 singleLimit = Le_max * 1.2;
 totalLimit = 1.2 * mean(EH1_Le_jing) + mean(EH2_Le_jing) + mean(EH3_Le_jing)+...
@@ -205,7 +209,13 @@ eleLimit_total = [totalLimit * 1.1, -totalLimit/reverseRate]; % 馈线
 % 电网
 Grid1 = Grid_171118(eleLimit_total);
 % EH参数与实例化
-EH1 = EH_local_170828_v3(eleLimit1, gasLimit1, EH1_Le, EH1_Lh, EH1_solarP, EH1_windP, CHP1_para, Boiler1_para, ES1_para, HS1_para, dev_L, dev_PV, dev_WT, EH1_solarP_rate, EH1_windP_rate, EH1_Le_drP_rate, EH1_Le_drP_total, EH1_Lh_drP_rate, EH1_Lh_drP_total);
-EH2 = EH_local_170828_v3(eleLimit2, gasLimit2, EH2_Le, EH2_Lh, EH2_solarP, EH2_windP, CHP2_para, Boiler2_para, ES2_para, HS2_para, dev_L, dev_PV, dev_WT, EH2_solarP_rate, EH2_windP_rate, EH2_Le_drP_rate, EH2_Le_drP_total, EH2_Lh_drP_rate, EH2_Lh_drP_total);
-EH3 = EH_local_170828_v3(eleLimit3, gasLimit3, EH3_Le, EH3_Lh, EH3_solarP, EH3_windP, CHP3_para, Boiler3_para, ES3_para, HS3_para, dev_L, dev_PV, dev_WT, EH3_solarP_rate, EH3_windP_rate, EH3_Le_drP_rate, EH3_Le_drP_total, EH3_Lh_drP_rate, EH3_Lh_drP_total);
+EH1 = EH_local_170828_v3(eleLimit1, gasLimit1, EH1_Le, EH1_Lh, EH1_solarP, EH1_windP, CHP1_para, Boiler1_para,...
+    ES1_para, HS1_para, dev_L, dev_PV, dev_WT, EH1_solarP_rate, EH1_windP_rate, ...
+    EH1_Le_drP_rate, EH1_Le_drP_total, EH1_Lh_drP_rate, EH1_Lh_drP_total, EH1_Le_flag', EH1_Lh_flag');
+EH2 = EH_local_170828_v3(eleLimit2, gasLimit2, EH2_Le, EH2_Lh, EH2_solarP, EH2_windP, CHP2_para, Boiler2_para,...
+    ES2_para, HS2_para, dev_L, dev_PV, dev_WT, EH2_solarP_rate, EH2_windP_rate,...
+    EH2_Le_drP_rate, EH2_Le_drP_total, EH2_Lh_drP_rate, EH2_Lh_drP_total, EH2_Le_flag', EH2_Lh_flag');
+EH3 = EH_local_170828_v3(eleLimit3, gasLimit3, EH3_Le, EH3_Lh, EH3_solarP, EH3_windP, CHP3_para, Boiler3_para, ...
+    ES3_para, HS3_para, dev_L, dev_PV, dev_WT, EH3_solarP_rate, EH3_windP_rate,...
+    EH3_Le_drP_rate, EH3_Le_drP_total, EH3_Lh_drP_rate, EH3_Lh_drP_total, EH3_Le_flag', EH3_Lh_flag');
 
