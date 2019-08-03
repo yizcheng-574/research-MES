@@ -1,14 +1,3 @@
-% clc
-% clear
-
-%多能协调优化
-%能源枢纽的本地集中式优化策略
-%2017.8.22 ver1.0
-%2017.8.28 ver1.1 电、热功率平衡改为大于约束，增加购气量和的约束，BUG为解决：热有盈余的话储热会又充又放
-%2017.8.28 ver2.0 改为class
-%2018.1.10 ver3.0 market信息改用全局变量，对储能的又充又放采用等效的线性优化方法，时间间隔改为15min
-
-
 classdef EH_local_170828_v3 < handle
     properties %可以设初始值
         %负荷与可再生能源
@@ -281,14 +270,15 @@ classdef EH_local_170828_v3 < handle
             
             % 只执行当前周期的结果
             obj.result_Ele(t_current) = x(1);
-            obj.result_CHP_G(t_current) = x(time+1);
-            obj.result_Boiler_G(t_current) = x(time*2+1);
-            obj.result_ES_discharge(t_current) = x(time*3+1);
-            obj.result_ES_charge(t_current) = x(time*4+1);
-            obj.result_HS_discharge(t_current) = x(time*5+1);
-            obj.result_HS_charge(t_current) = x(time*6+1);
-            obj.result_E_dr(t_current) = x(time*7+1);
-            obj.result_H_dr(t_current) = x(time*8+1);
+            obj.result_CHP_G(t_current) = x(time + 1);
+            obj.result_Boiler_G(t_current) = x(time * 2 + 1);
+            obj.result_ES_discharge(t_current) = x(time * 3 + 1);
+            obj.result_ES_charge(t_current) = x(time * 4 + 1);
+            obj.result_HS_discharge(t_current) = x(time * 5 + 1);
+            obj.result_HS_charge(t_current) = x(time * 6 + 1);
+            obj.result_E_dr(t_current) = x(time * 7 + 1);
+            obj.result_H_dr(t_current) = x(time * 8 + 1);
+            obj.result_eBoiler_E(t_current) = x(time * 9 + 1);
             %更新储能状态
             obj.ES_SOC(t_current+1) = obj.ES_selfd * obj.ES_SOC(t_current) - obj.result_ES_discharge(t_current) / obj.ES_eff / obj.ES_totalC + obj.result_ES_charge(t_current) * obj.ES_eff / obj.ES_totalC;
             obj.HS_SOC(t_current+1) = obj.HS_selfd * obj.HS_SOC(t_current) - obj.result_HS_discharge(t_current) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(t_current) * obj.HS_eff / obj.HS_totalC;
@@ -301,7 +291,7 @@ classdef EH_local_170828_v3 < handle
             conditionEle = clearDemand;
             
             [x,fval,exitflag,output,lambda] = localOptimal(obj, Eprice, Gprice, t_current, conditionEle);
-            time = 24*period - t_current + 1; %总时间段
+            time = 24 * period - t_current + 1; %总时间段
             for pt = t_current: 24 * period
                 obj.result_Ele(pt) = x(1 + pt - t_current);
                 obj.result_CHP_G(pt) = x(time + 1 + pt - t_current);
@@ -311,8 +301,9 @@ classdef EH_local_170828_v3 < handle
                 obj.result_HS_discharge(pt) = x(time*5 + 1 + pt - t_current);
                 obj.result_HS_charge(pt) = x(time*6 + 1 + pt - t_current);
                 %新增可平移负荷水平
-                obj.result_E_dr(pt) = x(time*7+ 1 +pt -t_current);
-                obj.result_H_dr(pt) = x(time*8+ 1 +pt -t_current);
+                obj.result_E_dr(pt) = x(time*7+ 1 + pt -t_current);
+                obj.result_H_dr(pt) = x(time*8+ 1 + pt -t_current);
+                obj.result_eBoiler_E(pt) = x(time * 9 + 1 + pt - t_current);
                 %更新储能状态
                 obj.ES_SOC(pt+1) = obj.ES_selfd * obj.ES_SOC(pt) - obj.result_ES_discharge(pt) / obj.ES_eff / obj.ES_totalC + obj.result_ES_charge(pt) * obj.ES_eff / obj.ES_totalC;
                 obj.HS_SOC(pt+1) = obj.HS_selfd * obj.HS_SOC(pt) - obj.result_HS_discharge(pt) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(pt) * obj.HS_eff / obj.HS_totalC;
@@ -420,7 +411,7 @@ classdef EH_local_170828_v3 < handle
                 Aeq_Ebus(i, time * 3 + i) = - 1; %放 电
                 Aeq_Ebus(i, time * 4 + i) = 1; % 充电
                 Aeq_Ebus(i, time * 7 + i) = 1; % 可平移电负荷
-                Aeq_Ebus(I, time * 9 + i) = 1; % 电锅炉
+                Aeq_Ebus(i, time * 9 + i) = 1; % 电锅炉
             end
             for i=1:time
                 Aeq_Hbus(i, time + i) = - obj.CHP_GH_eff;
@@ -563,7 +554,7 @@ classdef EH_local_170828_v3 < handle
             for i = 1 : time
                 lb(i, 1) = obj.Ele_min;
                 lb(time + i, 1) = obj.CHP_G_min;
-                lb(time * 13 + i, 1) = obj.eBolier_E_min;
+                lb(time * 13 + i, 1) = obj.eBoiler_E_min;
             end
             
             %等式约束包括：电、热平衡约束（供大于求，改为不等式）；电、热储能平衡性约束（改为不等式约束？）
@@ -586,7 +577,7 @@ classdef EH_local_170828_v3 < handle
                 Aeq_Hbus(i,time * 5 + i) = - 1; %放热
                 Aeq_Hbus(i,time * 6 + i) = 1; %充热
                 Aeq_Hbus(i,time * 8 + i) = 1;
-                Aeq_Hbus(i,time * 13 + i) = - obj.eBolier_eff;
+                Aeq_Hbus(i,time * 13 + i) = - obj.eBoiler_eff;
             end
             
             %可平移负荷约束

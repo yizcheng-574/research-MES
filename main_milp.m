@@ -16,8 +16,8 @@ for pt = 1: 24 * period
     
     time = 24 * period - pt + 1; %总时间段
     number = IESNUMBER;
-    var = time * 13;
-    totalVar = time * 13 * number; %总变量数
+    var = time * 14;
+    totalVar = time * 14 * number; %总变量数
     %第1,2,3组time是购电量、CHP购气量、锅炉购气量，第4-7组time是储电、储热的放、充功率
     %第8-9组是可平移负荷，第10-11组是EESbinary， 第12-13组是TESbinary
     intcon = [EH1_intcon, EH2_intcon + var, EH3_intcon + var];
@@ -58,9 +58,9 @@ for pt = 1: 24 * period
     
 end
 
-[result_Ele(:,4), result_CHP_G(:,4), result_Boiler_G(:,4), result_ES_discharge(:,4), result_ES_charge(:,4), result_HS_discharge(:,4), result_HS_charge(:,4), result_ES_SOC(:,4), result_HS_SOC(:,4), result_EH_Le(:, 4), result_EH_Lh(:,4), result_EH_solarP(:,4), result_EH_windP(:,4), result_EH_Edr(:,4), result_EH_Hdr(:,4)] = EH1.getResult;
-[result_Ele(:,5), result_CHP_G(:,5), result_Boiler_G(:,5), result_ES_discharge(:,5), result_ES_charge(:,5), result_HS_discharge(:,5), result_HS_charge(:,5), result_ES_SOC(:,5), result_HS_SOC(:,5), result_EH_Le(:, 5), result_EH_Lh(:,5), result_EH_solarP(:,5), result_EH_windP(:,5), result_EH_Edr(:,5), result_EH_Hdr(:,5)] = EH2.getResult;
-[result_Ele(:,6), result_CHP_G(:,6), result_Boiler_G(:,6), result_ES_discharge(:,6), result_ES_charge(:,6), result_HS_discharge(:,6), result_HS_charge(:,6), result_ES_SOC(:,6), result_HS_SOC(:,6), result_EH_Le(:, 6), result_EH_Lh(:,6), result_EH_solarP(:,6), result_EH_windP(:,6), result_EH_Edr(:,6), result_EH_Hdr(:,6)] = EH3.getResult;
+[result_Ele(:,4), result_CHP_G(:,4), result_Boiler_G(:,4), result_eBoiler_E(:,4), result_ES_discharge(:,4), result_ES_charge(:,4), result_HS_discharge(:,4), result_HS_charge(:,4), result_ES_SOC(:,4), result_HS_SOC(:,4), result_EH_Le(:, 4), result_EH_Lh(:,4), result_EH_solarP(:,4), result_EH_windP(:,4), result_EH_Edr(:,4), result_EH_Hdr(:,4)] = EH1.getResult;
+[result_Ele(:,5), result_CHP_G(:,5), result_Boiler_G(:,5), result_eBoiler_E(:,5), result_ES_discharge(:,5), result_ES_charge(:,5), result_HS_discharge(:,5), result_HS_charge(:,5), result_ES_SOC(:,5), result_HS_SOC(:,5), result_EH_Le(:, 5), result_EH_Lh(:,5), result_EH_solarP(:,5), result_EH_windP(:,5), result_EH_Edr(:,5), result_EH_Hdr(:,5)] = EH2.getResult;
+[result_Ele(:,6), result_CHP_G(:,6), result_Boiler_G(:,6), result_eBoiler_E(:,6), result_ES_discharge(:,6), result_ES_charge(:,6), result_HS_discharge(:,6), result_HS_charge(:,6), result_ES_SOC(:,6), result_HS_SOC(:,6), result_EH_Le(:, 6), result_EH_Lh(:,6), result_EH_solarP(:,6), result_EH_windP(:,6), result_EH_Edr(:,6), result_EH_Hdr(:,6)] = EH3.getResult;
 
 main_central;
 main_handle_MILP;

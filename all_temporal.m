@@ -49,16 +49,30 @@ for pt = st : temporal
             clearDemand_old = clearDemand_new;
         end
         
-        %当前价格下的出力
-        priceArray(pt : 24* period) = prePrice(pt : 24* period) + lamda_new;
+        
         [x1,f1,~,~,~] = EH1.handlePrice(priceArray, gasPrice1, pt);
         clearDemand_EH1_new = x1(1: 24 * period - pt + 1);
         [x2,f2,~,~,~] = EH2.handlePrice(priceArray, gasPrice1, pt);
         clearDemand_EH2_new = x2(1: 24 * period - pt + 1);
         [x3,f3,~,~,~] = EH3.handlePrice(priceArray, gasPrice1, pt);
         clearDemand_EH3_new = x3(1: 24 * period - pt + 1);
-        
+
         clearDemand_grid_new=zeros(24 * period - pt + 1 ,1);
+%         for i = 1: 24 * period - pt + 1
+%             if lamda_new(i) == 0 
+%                 clearDemand_grid_new(i) = clearDemand_EH1_new(i) + clearDemand_EH2_new(i) + clearDemand_EH3_new(i);
+%                 if clearDemand_grid_new(i) > eleLimit_total(1)
+%                     clearDemand_grid_new(i) = eleLimit_total(1);
+%                 end
+%                 if clearDemand_grid_new(i) < minimumPower
+%                     clearDemand_grid_new(i) = minimumPower;
+%                 end
+%             elseif lamda_new(i) > 0
+%                 clearDemand_grid_new(i) = eleLimit_total(1);
+%             else
+%                 clearDemand_grid_new(i) = minimumPower;
+%             end
+%         end
         for i = 1: 24 * period - pt + 1
             if lamda_new(i) == 0 
                 clearDemand_grid_new(i) = clearDemand_EH1_new(i) + clearDemand_EH2_new(i) + clearDemand_EH3_new(i);
@@ -69,11 +83,12 @@ for pt = st : temporal
                     clearDemand_grid_new(i) = minimumPower;
                 end
             elseif lamda_new(i) > 0
-                clearDemand_grid_new(i) =eleLimit_total(1);
+                clearDemand_grid_new(i) = eleLimit_total(1);
             else
                 clearDemand_grid_new(i) = minimumPower;
             end
         end
+ 
         clearDemand_new = [-clearDemand_grid_new, clearDemand_EH1_new , clearDemand_EH2_new , clearDemand_EH3_new] ;
         phi(number) = f1 + f2 + f3 - lamda_new'* clearDemand_grid_new;
         if  number == 1
@@ -101,14 +116,15 @@ for pt = st : temporal
                 break;
             end
             number = number + 1;
-            k = k + 1;
-            
+            k = k + 1;          
         else
             step = step / 2;
             delta_lambda = balanceDemand .* step /sqrt(sum(balanceDemand.^2)) ;
             lamda_new = lamda_old +  delta_lambda;
             k = k + 1;
         end
+        %当前价格下的出力
+        priceArray(pt : 24* period) = prePrice(pt : 24* period) + lamda_new;
     end
     
     
@@ -122,10 +138,6 @@ for pt = st : temporal
     prePrice = priceArray;
 end
 % 日前优化的结果
-
-[result_Ele(:,1), result_CHP_G(:,1), result_Boiler_G(:,1), result_ES_discharge(:,1), result_ES_charge(:,1), result_HS_discharge(:,1), result_HS_charge(:,1), result_ES_SOC(:,1), result_HS_SOC(:,1), EH1_Le, EH1_Lh, EH1_solarP, EH1_windP, EH1_Edr, EH1_Hdr] = EH1.getResult;
-[result_Ele(:,2), result_CHP_G(:,2), result_Boiler_G(:,2), result_ES_discharge(:,2), result_ES_charge(:,2), result_HS_discharge(:,2), result_HS_charge(:,2), result_ES_SOC(:,2), result_HS_SOC(:,2), EH2_Le, EH2_Lh, EH2_solarP, EH2_windP, EH2_Edr, EH2_Hdr] = EH2.getResult;
-[result_Ele(:,3), result_CHP_G(:,3), result_Boiler_G(:,3), result_ES_discharge(:,3), result_ES_charge(:,3), result_HS_discharge(:,3), result_HS_charge(:,3), result_ES_SOC(:,3), result_HS_SOC(:,3), EH3_Le, EH3_Lh, EH3_solarP, EH3_windP, EH3_Edr, EH3_Hdr] = EH3.getResult;
 if isDA
     priceArray_record(:,2) = priceArray;
 else

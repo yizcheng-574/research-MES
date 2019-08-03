@@ -1,4 +1,5 @@
 % 集中式滚动优化
+clc;clear;
 caseType = 2;
 para_init;
 global period couldExport

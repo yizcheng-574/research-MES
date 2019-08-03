@@ -1,6 +1,6 @@
 %单时段的优化问题，与all_temporal比较
 global minMarketPrice maxMarketPrice period IESNUMBER elePrice  minimumPower
-ee = 1e-2; %0.0001 0.0003
+ee = 1e-2; %0.0001 0.0003 
 iterativeStep = 1e-5; %0.00001 0.0001
 iterationTimes = zeros(24*period, 2); %记录迭代次数
 maxIteration = 3000; %最大迭代次数
@@ -65,10 +65,10 @@ for pt =  1 : 24 * period
         if clearDemand_maxPrice_grid < minimumPower
             clearDemand_maxPrice_grid = minimumPower;
         end
-    elseif  priceArray(pt )>  elePrice(pt)
-            clearDemand_maxPrice_grid =eleLimit_total(1);
+    elseif  priceArray(pt)> elePrice(pt)
+        clearDemand_maxPrice_grid =eleLimit_total(1);
     else
-            clearDemand_maxPrice_grid =minimumPower;
+        clearDemand_maxPrice_grid =minimumPower;
     end
     clearDemand_maxPrice = [-clearDemand_maxPrice_grid; clearDemand_maxPrice_EH1; clearDemand_maxPrice_EH2; clearDemand_maxPrice_EH3]; % 需求为正，供给为负
 
@@ -88,8 +88,8 @@ for pt =  1 : 24 * period
     EH3.conditionHandlePrice_2(priceArray, gasPrice1, pt, clearDemand(4));
 
 end
-[result_Ele(:,1), result_CHP_G(:,1), result_Boiler_G(:,1), result_ES_discharge(:,1), result_ES_charge(:,1), result_HS_discharge(:,1), result_HS_charge(:,1), result_ES_SOC(:,1), result_HS_SOC(:,1), result_EH_Le(:, 1), result_EH_Lh(:,1), result_EH_solarP(:,1), result_EH_windP(:,1), result_EH_Edr(:,1), result_EH_Hdr(:,1)] = EH1.getResult;
-[result_Ele(:,2), result_CHP_G(:,2), result_Boiler_G(:,2), result_ES_discharge(:,2), result_ES_charge(:,2), result_HS_discharge(:,2), result_HS_charge(:,2), result_ES_SOC(:,2), result_HS_SOC(:,2), result_EH_Le(:, 2), result_EH_Lh(:,2), result_EH_solarP(:,2), result_EH_windP(:,2), result_EH_Edr(:,2), result_EH_Hdr(:,2)] = EH2.getResult;
-[result_Ele(:,3), result_CHP_G(:,3), result_Boiler_G(:,3), result_ES_discharge(:,3), result_ES_charge(:,3), result_HS_discharge(:,3), result_HS_charge(:,3), result_ES_SOC(:,3), result_HS_SOC(:,3), result_EH_Le(:, 3), result_EH_Lh(:,3), result_EH_solarP(:,3), result_EH_windP(:,3), result_EH_Edr(:,3), result_EH_Hdr(:,3)] = EH3.getResult;
+[result_Ele(:,1), result_CHP_G(:,1), result_Boiler_G(:,1), result_eBoiler_E(:,1), result_ES_discharge(:,1), result_ES_charge(:,1), result_HS_discharge(:,1), result_HS_charge(:,1), result_ES_SOC(:,1), result_HS_SOC(:,1), result_EH_Le(:, 1), result_EH_Lh(:,1), result_EH_solarP(:,1), result_EH_windP(:,1), result_EH_Edr(:,1), result_EH_Hdr(:,1)] = EH1.getResult();
+[result_Ele(:,2), result_CHP_G(:,2), result_Boiler_G(:,2), result_eBoiler_E(:,2), result_ES_discharge(:,2), result_ES_charge(:,2), result_HS_discharge(:,2), result_HS_charge(:,2), result_ES_SOC(:,2), result_HS_SOC(:,2), result_EH_Le(:, 2), result_EH_Lh(:,2), result_EH_solarP(:,2), result_EH_windP(:,2), result_EH_Edr(:,2), result_EH_Hdr(:,2)] = EH2.getResult();
+[result_Ele(:,3), result_CHP_G(:,3), result_Boiler_G(:,3), result_eBoiler_E(:,3), result_ES_discharge(:,3), result_ES_charge(:,3), result_HS_discharge(:,3), result_HS_charge(:,3), result_ES_SOC(:,3), result_HS_SOC(:,3), result_EH_Le(:, 3), result_EH_Lh(:,3), result_EH_solarP(:,3), result_EH_windP(:,3), result_EH_Edr(:,3), result_EH_Hdr(:,3)] = EH3.getResult();
 
 priceArray_record(:,3) = priceArray;
