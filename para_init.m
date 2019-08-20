@@ -20,41 +20,65 @@ elseif period == 4 % 只有174家公司了
     load windValue_15min.mat
 end
 load '../gridPriceRecord'
-Le_max = [2 , 1.3 , 1.5] * 1000;
-Lh_max = [1 , 2 , 2] * 1000;
-Le_dr_rate = [0.2, 0.1, 0.2];
-Lh_dr_rate = [0.2, 0, 0];
-solar_max = [0 , 0.6 , 0.5] * 1000;
-wind_max = [1 , 0.3 , 0.8] * 1000;
-% IES1 工业区，电热负荷都比较平，白天稍高，热大于电，负荷型
-EH1_Le = loadValue(:,94); % 对应134号公司 %/10
-EH1_Lh = loadValue(:,143); % 对应223号公司 %/5
-EH1_solarP = solarValue(:,3) ; %*1
-EH1_windP = windValue(:,3); %*2
-EH1_Le_flag = zeros(24, 1); EH1_Le_flag(1:3) = ones(3, 1);  EH1_Le_flag(16:23) = ones(8,1);%表示可平移负荷区间
+Le_max = [1.5 , 1.3 , 1.5] * 1000;
+Lh_max = [2 , 1 , 2] * 1000;
+Le_dr_rate = [0, 0, 0];
+Lh_dr_rate = [0, 0, 0];
+solar_max = [0 , 0.2 , 1] * 1000;
+wind_max = [1.2 , 0.2 , 0] * 1000;
+
+% IES1 居民区
+EH1_Le = loadValue(:,65); 
+EH1_Lh = circshift(loadValue(:,112),9);
+EH1_solarP = solarValue(:,3) ; 
+EH1_windP = windValue(:,3); 
+EH1_Le_flag = zeros(24, 1); EH1_Le_flag(1:3) = ones(3, 1);  EH1_Le_flag(16:23) = ones(8,1);
 EH1_Lh_flag = zeros(24, 1); EH1_Lh_flag(1:3) = ones(3, 1);  EH1_Lh_flag(16:23) = ones(8,1);
 
-% IES2 商务区，电热负荷白天高，晚上很低，热电相当，电有驼峰，负荷型
-EH2_Le = loadValue(:,88) ; % 对应127号公司 %/8
-EH2_Lh = loadValue(:,91) ; % 对应130号公司 %/6
+% IES2 住宅区，电热负荷白天低，晚上高，热电相当，资源丰富型
+EH2_Le = loadValue(:,172);
+EH2_Lh = circshift(loadValue(:, 68), 15); 
 EH2_solarP = solarValue(:,1) ;
 EH2_windP = [windValue(12:end,1);windValue(1:11,1)];
 EH2_Le_flag = zeros(24, 1); EH2_Le_flag(1:6) = ones(6,1);  EH2_Le_flag(20:24) = ones(5,1);
 EH2_Lh_flag = zeros(24, 1); % 商业区没有可平移热负荷
 
-% IES3 住宅区，电热负荷白天低，晚上高，热电相当，资源丰富型
-if period == 1
-    EH3_Le = loadValue(:,172) ; % 对应273号公司 %/5
-    EH3_Lh = circshift(loadValue(:, 68), 15); 
-    EH3_Le_flag = zeros(24, 1); EH3_Le_flag(9:20) = ones(12,1); 
-    EH3_Lh_flag = zeros(24, 1); % 住宅区没有可平移热负荷
-%     EH3_Lh = loadValue(:,174) ;
-elseif period == 4
-    EH3_Le = loadValue(:,169) ; % 对应273号公司
-    EH3_Lh = loadValue(:,171) ; % 对应275号公司
-end
+
+% IES3 商务区，电热负荷白天高，晚上很低，热电相当，电有驼峰，负荷型
+EH3_Le = loadValue(:,88) ; % 对应127号公司 %/8
+EH3_Lh = loadValue(:,91) ; % 对应130号公司 %/6
+EH3_Le_flag = zeros(24, 1); EH3_Le_flag(9:20) = ones(12,1); 
+EH3_Lh_flag = zeros(24, 1); % 住宅区没有可平移热负荷
+
 EH3_solarP = solarValue(:,27) ;
 EH3_windP = windValue(:,27);
+
+%CHP的参数
+CHP1_para = [0.30, 0.42, Lh_max(1) * 1.2, 0, 1]; % CHP_GE_eff_in, CHP_GH_eff_in, CHP_Prate_in, CHP_Pmin_Rate_in, CHP_ramp_rate
+CHP2_para = [0.35, 0.45, 0, 0, 0.4];
+CHP3_para = [0.28, 0.56, Lh_max(3) * 1.2, 0, 1];
+
+
+%电锅炉
+eBoiler1_para = [0.98; 0; 0; 0.5]; % eBoiler_eff_in, eBoiler_Prate_in, eBoiler_Prate_min, eBoiler_Prate_ramp
+eBoiler2_para = [0.98; Le_max(2) * 0.6; 0; 0.5];
+eBoiler3_para = [0.98; 0; 0; 0.5];
+
+%燃气锅炉
+Boiler1_para = [0.90; 0]; % Boiler_eff_in, Boiler_Prate_in
+Boiler2_para = [0.90; Lh_max(2) * 0.7];
+Boiler3_para = [0.90; 0];
+
+%电储能和热储能
+
+
+ES1_para = [1400, 0.85, 0.15, 0.2, 0.2, 6, 0.9];
+ES2_para = [0, 0.85, 0.15, 0.2, 0.2, 6, 0.9];
+ES3_para = [1400, 0.85, 0.15, 0.2, 0.2, 3, 0.9];
+% HS_totalC_in, HS_maxSOC_in, HS_minSOC_in, HS_currentSOC_in, HS_targetSOC_in, HS_chargeTime, HS_eff_in
+HS1_para = [1200, 0.9, 0.1, 0.6, 0.6, 5, 0.9];
+HS2_para = [0, 0.9, 0.1, 0.6, 0.6, 5, 0.9];
+HS3_para = [1200, 0.9, 0.1, 0.5, 0.5, 0.5, 0.9];
 
 IESNUMBER = 3; % IES个数
 
@@ -117,40 +141,6 @@ gasLimit1 = 1e6; %暂时不考虑回售天然气
 gasLimit2 = 1e6;
 gasLimit3 = 1e6;
 
-%CHP的参数
-CHP1_para = [0.30, 0.42, 1400, 0.3, 0.4]; % CHP_GE_eff_in, CHP_GH_eff_in, CHP_Prate_in, CHP_Pmin_Rate_in, CHP_ramp_rate
-CHP2_para = [0.35, 0.45, 1200, 0.3, 0.4];
-
-if caseType == 31
-    CHP3_para = [0.28, 0.56, 1, 0.2, 0.5];
-else
-    CHP3_para = [0.28, 0.56, 1200, 0.3, 0.4];
-end
-
-%电锅炉
-eBoiler1_para = [0.98; Lh_max(1); 0; 0.5]; % eBoiler_eff_in, eBoiler_Prate_in, eBoiler_Prate_min, eBoiler_Prate_ramp
-eBoiler2_para = [0.98; Lh_max(2); 0; 0.5];
-eBoiler3_para = [0.98; Lh_max(3); 0; 0.5];
-
-%燃气锅炉
-Boiler1_para = [0.90; Lh_max(1) * 0.5]; % Boiler_eff_in, Boiler_Prate_in
-Boiler2_para = [0.90; Lh_max(2) * 0.5];
-Boiler3_para = [0.90; Lh_max(3) * 0.5];
-
-%电储能和热储能
-
-if caseType == 32
-    ES1_para = [2000, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
-else
-    ES1_para = [2000, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
-end
-ES2_para = [1000, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
-ES3_para = [500, 0.85, 0.15, 0.2, 0.4, 6, 0.9];
-% HS_totalC_in, HS_maxSOC_in, HS_minSOC_in, HS_currentSOC_in, HS_targetSOC_in, HS_chargeTime, HS_eff_in
-HS1_para = [1000, 0.9, 0.1, 0.6, 0.5, 5, 0.9];
-HS2_para = [1000, 0.9, 0.1, 0.6, 0.5, 5, 0.9];
-HS3_para = [1000, 0.9, 0.1, 0.5, 0.6, 0.5, 0.9];
-
 % 负荷和风光预测误差
 dev_L = 3/100; %百分数 1
 dev_PV = 10/100; %5
@@ -181,14 +171,14 @@ EH2_Lh_drP_total = EH2_Lh_drP_rate * 4;
 EH3_Lh_drP_total = EH3_Lh_drP_rate * 4;
 
 singleLimit = Le_max * 1.2;
-totalLimit = 1.2 * mean(EH1_Le_jing) + mean(EH2_Le_jing) + mean(EH3_Le_jing)+...
-    (EH1_Le_drP_total +EH1_Le_drP_total + EH1_Le_drP_total )/(24 * period) ;
+% totalLimit = 1.2 * mean(EH1_Le_jing) + mean(EH2_Le_jing) + mean(EH3_Le_jing)+...
+%     (EH1_Le_drP_total +EH1_Le_drP_total + EH1_Le_drP_total )/(24 * period) ;
 reverseRate = 4;
 % 支线: 下级向上级购电、售电约束，再加一个线损率5-7%
-eleLimit1 = [singleLimit(1), -singleLimit(1)/reverseRate, 0.94];
-eleLimit2 = [singleLimit(2), -singleLimit(2)/reverseRate, 0.94];
-eleLimit3 = [singleLimit(3), -singleLimit(3)/reverseRate, 0.94];
-eleLimit_total = [totalLimit * 1.1, -totalLimit/reverseRate]; % 馈线
+eleLimit1 = [singleLimit(1), -singleLimit(1), 0.94];
+eleLimit2 = [singleLimit(2), -singleLimit(2), 0.94];
+eleLimit3 = [singleLimit(3), -singleLimit(3), 0.94];
+eleLimit_total = [sum(singleLimit) /2.5, 0]; % 馈线
 
 % 电网
 Grid1 = Grid_171118(eleLimit_total);

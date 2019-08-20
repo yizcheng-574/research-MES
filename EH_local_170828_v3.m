@@ -406,7 +406,7 @@ classdef EH_local_170828_v3 < handle
             beq_Ebus = - obj.Le_pre(t_current : 24*period) + obj.windP_pre(t_current : 24*period) + obj.solarP_pre(t_current : 24*period); %Le的size不变，但是取部分值
             beq_Hbus = - obj.Lh_pre(t_current : 24*period); %Lh的size不变，但是取部分值
             for i=1:time
-                Aeq_Ebus(i, i) = - obj.Ele_eff; % 线损率
+                Aeq_Ebus(i, i) = - 1; % 线损率
                 Aeq_Ebus(i, time + i) = - obj.CHP_GE_eff;
                 Aeq_Ebus(i, time * 3 + i) = - 1; %放 电
                 Aeq_Ebus(i, time * 4 + i) = 1; % 充电
@@ -436,13 +436,21 @@ classdef EH_local_170828_v3 < handle
             end
             %电、热储能平衡性约束
             Aeq_ES = zeros(1, var);
-            beq_ES = - (obj.ES_targetSOC - obj.ES_SOC(t_current) * obj.ES_selfd ^ time) * obj.ES_totalC;
+            if obj.ES_totalC ~= 0
+                beq_ES = - (obj.ES_targetSOC - obj.ES_SOC(t_current) * obj.ES_selfd ^ time) * obj.ES_totalC;
+            else
+                beq_ES = 0;
+            end
             for i=1:time
                 Aeq_ES(1, time * 3 + i) = obj.ES_selfd ^ (time - i) / obj.ES_eff; %放电
                 Aeq_ES(1, time * 4 + i) = - obj.ES_selfd ^ (time - i) * obj.ES_eff; %充电
             end
             Aeq_HS = zeros(1, var);
-            beq_HS = - (obj.HS_targetSOC - obj.HS_SOC(t_current) * obj.HS_selfd ^ time) * obj.HS_totalC;
+            if obj.HS_totalC ~= 0
+                beq_HS = - (obj.HS_targetSOC - obj.HS_SOC(t_current) * obj.HS_selfd ^ time) * obj.HS_totalC;
+            else
+                beq_HS = 0;
+            end
             for i=1:time
                 Aeq_HS(1, time * 5 + i) = obj.HS_selfd ^ (time - i) / obj.HS_eff; %放热
                 Aeq_HS(1, time * 6 + i) = - obj.HS_selfd ^ (time - i) * obj.HS_eff; %充热
@@ -473,8 +481,8 @@ classdef EH_local_170828_v3 < handle
             end
             for i=1:time
                 for j=1 : i
-                    A1_Hsoc(i, time*5+j) = - obj.HS_selfd ^ (i - j) / obj.HS_eff; %放热
-                    A1_Hsoc(i, time*6+j) = obj.HS_selfd ^ (i - j) * obj.HS_eff; %充热
+                    A1_Hsoc(i, time * 5 + j) = - obj.HS_selfd ^ (i - j) / obj.HS_eff; %放热
+                    A1_Hsoc(i, time * 6 + j) = obj.HS_selfd ^ (i - j) * obj.HS_eff; %充热
                 end
             end
             A2_Hsoc = -A1_Hsoc;
@@ -564,7 +572,7 @@ classdef EH_local_170828_v3 < handle
             beq_Ebus = - obj.Le_pre(t_current : 24 * period) + obj.windP_pre(t_current : 24 * period) + obj.solarP_pre(t_current : 24 * period);
             beq_Hbus = - obj.Lh_pre(t_current : 24 * period); 
             for i=1:time
-                Aeq_Ebus(i,i) = - obj.Ele_eff; %线损率
+                Aeq_Ebus(i,i) = - 1; %线损率
                 Aeq_Ebus(i,time + i) = - obj.CHP_GE_eff;
                 Aeq_Ebus(i,time * 3 + i) = - 1; %放电
                 Aeq_Ebus(i,time * 4 + i) = 1; %充电
@@ -594,13 +602,21 @@ classdef EH_local_170828_v3 < handle
             end
             %电、热储能平衡性约束
             Aeq_ES = zeros(1, var);
-            beq_ES = - (obj.ES_targetSOC - obj.ES_SOC(t_current) * obj.ES_selfd ^ time) * obj.ES_totalC;
+            if obj.ES_totalC ~= 0
+                beq_ES = - (obj.ES_targetSOC - obj.ES_SOC(t_current) * obj.ES_selfd ^ time) * obj.ES_totalC;
+            else 
+                beq_ES = 0;
+            end
             for i=1:time
                 Aeq_ES(1, time * 3 + i) = obj.ES_selfd ^ (time - i) / obj.ES_eff; %放电
                 Aeq_ES(1, time * 4 + i) = - obj.ES_selfd ^ (time - i) * obj.ES_eff; %充电
             end
             Aeq_HS = zeros(1, var);
-            beq_HS = - (obj.HS_targetSOC - obj.HS_SOC(t_current) * obj.HS_selfd ^ time) * obj.HS_totalC;
+            if obj.HS_totalC ~= 0
+                beq_HS = - (obj.HS_targetSOC - obj.HS_SOC(t_current) * obj.HS_selfd ^ time) * obj.HS_totalC;
+            else
+                beq_HS = 0;
+            end
             for i=1:time
                 Aeq_HS(1, time * 5 + i) = obj.HS_selfd ^ (time - i) / obj.HS_eff; %放热
                 Aeq_HS(1, time * 6 + i) = - obj.HS_selfd ^ (time - i) * obj.HS_eff; %充热
@@ -768,7 +784,7 @@ classdef EH_local_170828_v3 < handle
             beq_Ebus = - obj.Le_pre(t_current : 24 * period) + obj.windP_pre(t_current : 24 * period) + obj.solarP_pre(t_current : 24 * period);
             beq_Hbus = - obj.Lh_pre(t_current : 24 * period); 
             for i=1:time
-                Aeq_Ebus(i,i) = - obj.Ele_eff; %线损率
+                Aeq_Ebus(i,i) = - 1; %线损率
                 Aeq_Ebus(i,time + i) = - obj.CHP_GE_eff;
                 Aeq_Ebus(i,time * 3 + i) = - 1; %放电
                 Aeq_Ebus(i,time * 4 + i) = 1; %充电
@@ -798,13 +814,21 @@ classdef EH_local_170828_v3 < handle
             end
             %电、热储能平衡性约束
             Aeq_ES = zeros(1, var);
-            beq_ES = - (obj.ES_targetSOC - obj.ES_SOC(t_current) * obj.ES_selfd ^ time) * obj.ES_totalC;
+            if obj.ES_totalC ~= 0
+                beq_ES = - (obj.ES_targetSOC - obj.ES_SOC(t_current) * obj.ES_selfd ^ time) * obj.ES_totalC;
+            else
+                beq_ES = 0;
+            end
             for i=1:time
                 Aeq_ES(1, time * 3 + i) = obj.ES_selfd ^ (time - i) / obj.ES_eff; %放电
                 Aeq_ES(1, time * 4 + i) = - obj.ES_selfd ^ (time - i) * obj.ES_eff; %充电
             end
             Aeq_HS = zeros(1, var);
-            beq_HS = - (obj.HS_targetSOC - obj.HS_SOC(t_current) * obj.HS_selfd ^ time) * obj.HS_totalC;
+            if obj.HS_totalC ~= 0
+                beq_HS = - (obj.HS_targetSOC - obj.HS_SOC(t_current) * obj.HS_selfd ^ time) * obj.HS_totalC;
+            else
+                beq_HS = 0;
+            end
             for i=1:time
                 Aeq_HS(1, time * 5 + i) = obj.HS_selfd ^ (time - i) / obj.HS_eff; %放热
                 Aeq_HS(1, time * 6 + i) = - obj.HS_selfd ^ (time - i) * obj.HS_eff; %充热
@@ -849,7 +873,7 @@ classdef EH_local_170828_v3 < handle
                 A_Gmax(i, time * 2 + i) = 1;
             end
            
-             A_ramp_normal = diag(ones(1, time))-diag(ones(1, time -1),1);
+            A_ramp_normal = diag(ones(1, time))-diag(ones(1, time -1),1);
             A_ramp_normal = A_ramp_normal(1: end -1,:);
             tmp_row = time - 1;
             A_ramp = zeros(tmp_row * 2, var); % 分别是CHP机组、电锅炉机组爬坡率约束.
@@ -861,10 +885,11 @@ classdef EH_local_170828_v3 < handle
             %归纳所有线性约束
             %等式约束包括：电、热平衡约束（改为不等式），电、热储能平衡性约束（改为不等式）
             %不等式约束包括：SOC约束，购气量和的约束，（爬坡率约束）
-            Aeq=[Aeq_Edr; Aeq_Hdr; Aeq_Hbus; Aeq_ES; Aeq_HS; ];
-            beq=[beq_Edr; beq_Hdr; beq_Hbus';beq_ES; beq_HS;];
-            A=[Aeq_Ebus;  A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc; A_Gmax; A_ramp; -A_ramp];
-            b=[beq_Ebus'; b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc; b_Gmax; b_ramp; b_ramp];
+          
+            Aeq=[Aeq_Edr; Aeq_Hdr; Aeq_Hbus; Aeq_ES; Aeq_HS; Aeq_Ebus;];
+            beq=[beq_Edr; beq_Hdr; beq_Hbus';beq_ES; beq_HS; beq_Ebus';];
+            A=[A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc; A_Gmax; A_ramp; -A_ramp];
+            b=[b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc; b_Gmax; b_ramp; b_ramp];
 
            % 需要额外增加一个购电量的上、下限约束
             A_eleLimit_total = zeros(time, var);
@@ -892,10 +917,13 @@ classdef EH_local_170828_v3 < handle
             obj.result_H_dr(t_current) = x(time * 8 + 1 + (IES_no - 1) * var);
             obj.result_eBoiler_E(t_current) = x(time * 9 + 1 + (IES_no - 1) * var) ;
             %更新储能状态
-            obj.ES_SOC(t_current+1) = obj.ES_selfd * obj.ES_SOC(t_current) - obj.result_ES_discharge(t_current) / obj.ES_eff / obj.ES_totalC + obj.result_ES_charge(t_current) * obj.ES_eff / obj.ES_totalC;
-            obj.HS_SOC(t_current+1) = obj.HS_selfd * obj.HS_SOC(t_current) - obj.result_HS_discharge(t_current) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(t_current) * obj.HS_eff / obj.HS_totalC;
-        end
-        
+            if obj.ES_totalC ~= 0
+                obj.ES_SOC(t_current+1) = obj.ES_selfd * obj.ES_SOC(t_current) - obj.result_ES_discharge(t_current) / obj.ES_eff / obj.ES_totalC + obj.result_ES_charge(t_current) * obj.ES_eff / obj.ES_totalC;
+            end
+            if obj.HS_totalC ~= 0
+                obj.HS_SOC(t_current+1) = obj.HS_selfd * obj.HS_SOC(t_current) - obj.result_HS_discharge(t_current) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(t_current) * obj.HS_eff / obj.HS_totalC;
+            end
+         end 
     end
     
 end

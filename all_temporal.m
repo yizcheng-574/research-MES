@@ -58,21 +58,6 @@ for pt = st : temporal
         clearDemand_EH3_new = x3(1: 24 * period - pt + 1);
 
         clearDemand_grid_new=zeros(24 * period - pt + 1 ,1);
-%         for i = 1: 24 * period - pt + 1
-%             if lamda_new(i) == 0 
-%                 clearDemand_grid_new(i) = clearDemand_EH1_new(i) + clearDemand_EH2_new(i) + clearDemand_EH3_new(i);
-%                 if clearDemand_grid_new(i) > eleLimit_total(1)
-%                     clearDemand_grid_new(i) = eleLimit_total(1);
-%                 end
-%                 if clearDemand_grid_new(i) < minimumPower
-%                     clearDemand_grid_new(i) = minimumPower;
-%                 end
-%             elseif lamda_new(i) > 0
-%                 clearDemand_grid_new(i) = eleLimit_total(1);
-%             else
-%                 clearDemand_grid_new(i) = minimumPower;
-%             end
-%         end
         for i = 1: 24 * period - pt + 1
             if lamda_new(i) == 0 
                 clearDemand_grid_new(i) = clearDemand_EH1_new(i) + clearDemand_EH2_new(i) + clearDemand_EH3_new(i);

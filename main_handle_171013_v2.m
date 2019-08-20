@@ -205,15 +205,16 @@ if caseType ~=32
         set(H4(2), 'Color', 'black', 'LineStyle', '-', 'LineWidth', 1.5);
 
         ylabel('electric power(MW)');
-        ylim([min(sum(bar_negtive, 2)),max(sum(bar_positive, 2))]);
+        ylim([min(sum(bar_negtive, 2)) * 1.1 - 0.01 ,max(sum(bar_positive, 2)) * 1.1]);
         yticks(-1:0.5:2.5);
         
-        yyaxis right;
-        
-        H2 = prettyline(t2, result_ES_SOC( : , IES_no)); 
-        ylabel('SOC');
-        ylim([0,1]);
-        yticks(0.1:0.2:1);
+        if max(result_ES_discharge(:, IES_no)) > 10 && max(result_ES_charge(:, IES_no)) > 10
+            yyaxis right;
+            H2 = prettyline(t2, result_ES_SOC( : , IES_no)); 
+            ylabel('SOC');
+            ylim([0,1]);
+            yticks(0.1:0.2:1);
+        end
         
         xlabel(sprintf('MES%d', IES_no));
         xlim([0, 24 * period + 1]);
@@ -270,14 +271,16 @@ if caseType ~=32
         set(H4(2), 'Color', 'black', 'LineStyle', '-', 'LineWidth', 1.5);
        
         ylabel('thermal power(MW)');
-        ylim([min(sum(bar_negtive, 2)),max(sum(bar_positive, 2))]);
+        ylim([min(sum(bar_negtive, 2)) * 1.1 - 0.01,max(sum(bar_positive, 2)) * 1.1]);
         yticks(-1 : 0.5 : 2);
-        
-        yyaxis right;
-        H2 = prettyline(t2, result_HS_SOC(:,IES_no));
-        ylabel('SOC');
-        ylim([0,1]);
-        yticks(0.1:0.2:1);
+        if max(result_HS_discharge(:, IES_no)) > 10 && max(result_HS_charge(:, IES_no)) > 10
+            yyaxis right;
+            H2 = prettyline(t2, result_HS_SOC(:,IES_no));
+            ylabel('SOC');
+            ylim([0,1]);
+            yticks(0.1:0.2:1);
+        end
+       
         
         xlabel(sprintf('MES%d',IES_no));
         xlim([0, 24 * period + 1]);

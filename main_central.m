@@ -1,8 +1,8 @@
 % 集中式滚动优化
 clc;clear;
+global period couldExport caseType
 caseType = 2;
 para_init;
-global period couldExport
 temporal = 24* period;
 isCentral = 1;
 for pt = 1: temporal
@@ -12,11 +12,10 @@ for pt = 1: temporal
     [EH1_f, EH1_ub, EH1_lb, EH1_Aeq, EH1_beq, EH1_A, EH1_b, EH1_A_eleLimit_total ] = EH1.OptMatrix(gasPrice1, pt);
     [EH2_f, EH2_ub, EH2_lb, EH2_Aeq, EH2_beq, EH2_A, EH2_b, EH2_A_eleLimit_total ] = EH2.OptMatrix(gasPrice1, pt);
     [EH3_f, EH3_ub, EH3_lb, EH3_Aeq, EH3_beq, EH3_A, EH3_b, EH3_A_eleLimit_total ] = EH3.OptMatrix(gasPrice1, pt);
-    time = 24*period - pt + 1; %总时间段
+    time = 24 * period - pt + 1; %总时间段
     number = IESNUMBER;
     var = time * 10;
     totalVar = time * 10 * number; %总变量数
-    %第1,2,3组time是购电量、CHP购气量、锅炉购气量，第4-7组time是储电、储热的放、充功率
     
     f = [EH1_f; EH2_f; EH3_f];
     ub = [EH1_ub; EH2_ub; EH3_ub];
@@ -33,19 +32,16 @@ for pt = 1: temporal
     for i= 1 : number
         eval(['A1((i-1)*lr+1:lr*i,(i-1)*lc+1:lc*i) = EH',num2str(i),'_A;']);
     end
-    b1 = [EH1_b; EH2_b;EH3_b];
+    b1 = [EH1_b; EH2_b; EH3_b];
     
     % 需要额外增加一个购电量的上、下限约束
-    A2 = [EH1_A_eleLimit_total, EH2_A_eleLimit_total, EH2_A_eleLimit_total];
+    A2 = [EH1_A_eleLimit_total, EH2_A_eleLimit_total, EH3_A_eleLimit_total];
     b2 = ones(time, 1) .* eleLimit_total(1);
-    if couldExport == 1
-    	b2_sale = ones(time, 1) .* eleLimit_total(2);
-    else
-        b2_sale = zeros(time, 1);
-    end
+    b2_sale = zeros(time, 1);
+   
     A = [A1; A2; -A2];
     b = [b1; b2; -b2_sale];
-    
+
     [x,fval,exitflag,output,lambda] = linprog(f,A,b,Aeq,beq,lb,ub);
     
     for IES_no = 1 : IESNUMBER
