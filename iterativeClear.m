@@ -1,4 +1,4 @@
-function [clearPrice, clearDemand] = iterativeClear(price_min, price_max, clearDemand_minPrice, clearDemand_maxPrice, ee, priceArray, gasPrice1, t_current)
+function [clearPrice, clearDemand] = iterativeClear(price_min, price_max, clearDemand_minPrice, clearDemand_maxPrice, ee, priceArray, gasPrice1, t_current, resP)
 
     global Grid1 EH1 EH2 EH3 minMarketPrice maxMarketPrice iterationNumber elePrice eleLimit_total minimumPower
     
@@ -12,7 +12,7 @@ function [clearPrice, clearDemand] = iterativeClear(price_min, price_max, clearD
     [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice1, t_current);
     clearDemand_medium_EH3 = x(1);
     if priceArray(t_current) ==  elePrice(t_current)
-        clearDemand_medium_grid = clearDemand_mediumPrice_EH1(i) + clearDemand_mediumPrice_EH2(i) + clearDemand_mediumPrice_EH3(i);
+        clearDemand_medium_grid = clearDemand_mediumPrice_EH1 + clearDemand_mediumPrice_EH2 + clearDemand_mediumPrice_EH3 - resP;
         if clearDemand_medium_grid > eleLimit_total(1)
             clearDemand_medium_grid = eleLimit_total(1);
         end
@@ -24,7 +24,7 @@ function [clearPrice, clearDemand] = iterativeClear(price_min, price_max, clearD
     else
         clearDemand_medium_grid =minimumPower;
     end
-    clearDemand_mediumPrice = [-clearDemand_medium_grid; clearDemand_medium_EH1; clearDemand_medium_EH2; clearDemand_medium_EH3]; %需求为正，供给为负
+    clearDemand_mediumPrice = [-clearDemand_medium_grid; clearDemand_medium_EH1; clearDemand_medium_EH2; clearDemand_medium_EH3; -resP]; %需求为正，供给为负
     
     iterationNumber = iterationNumber + 1;
     
@@ -32,7 +32,7 @@ function [clearPrice, clearDemand] = iterativeClear(price_min, price_max, clearD
         distance = price_medium - price_min;
         if distance>ee
             % price_max = price_medium;
-            [clearPrice, clearDemand] = iterativeClear(price_min, price_medium, clearDemand_minPrice, clearDemand_mediumPrice, ee, priceArray, gasPrice1,  t_current);
+            [clearPrice, clearDemand] = iterativeClear(price_min, price_medium, clearDemand_minPrice, clearDemand_mediumPrice, ee, priceArray, gasPrice1, t_current, resP);
         else
             % 方法一，正常二分法的结果，但是不能保证供需平衡
             % clearPrice = (price_min + price_medium)/2; % 停止迭代
@@ -60,7 +60,7 @@ function [clearPrice, clearDemand] = iterativeClear(price_min, price_max, clearD
         distance = price_max - price_medium;
         if distance>ee
             % price_min = price_medium;
-            [clearPrice, clearDemand] = iterativeClear(price_medium, price_max, clearDemand_mediumPrice, clearDemand_maxPrice, ee, priceArray, gasPrice1, t_current);
+            [clearPrice, clearDemand] = iterativeClear(price_medium, price_max, clearDemand_mediumPrice, clearDemand_maxPrice, ee, priceArray, gasPrice1, t_current, resP);
         else
             % 方法一，正常二分法的结果，但是不能保证供需平衡
             % clearPrice = (price_medium + price_max)/2; % 停止迭代            

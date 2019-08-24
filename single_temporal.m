@@ -35,7 +35,7 @@ for pt =  1 : 24 * period
     [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice1, pt);
     clearDemand_minPrice_EH3 = x(1);
     if priceArray(pt) ==  elePrice(pt)
-        clearDemand_minPrice_grid = clearDemand_minPrice_EH1 + clearDemand_minPrice_EH2 + clearDemand_minPrice_EH3;
+        clearDemand_minPrice_grid = clearDemand_minPrice_EH1 + clearDemand_minPrice_EH2 + clearDemand_minPrice_EH3 - EH_res_total(pt);
         if clearDemand_minPrice_grid > eleLimit_total(1)
             clearDemand_minPrice_grid = eleLimit_total(1);
         end
@@ -47,7 +47,7 @@ for pt =  1 : 24 * period
     else
         clearDemand_minPrice_grid =minimumPower;
     end
-    clearDemand_minPrice = [-clearDemand_minPrice_grid; clearDemand_minPrice_EH1; clearDemand_minPrice_EH2; clearDemand_minPrice_EH3]; % 需求为正，供给为负
+    clearDemand_minPrice = [-clearDemand_minPrice_grid; clearDemand_minPrice_EH1; clearDemand_minPrice_EH2; clearDemand_minPrice_EH3; - EH_res_total(pt)]; % 需求为正，供给为负
 
     % 最高价格，一般都是供给大于需求
     priceArray(pt) = maxMarketPrice;
@@ -58,7 +58,7 @@ for pt =  1 : 24 * period
     [x,~,~,~,~] = EH3.handlePrice(priceArray, gasPrice1, pt);
     clearDemand_maxPrice_EH3 = x(1);
     if priceArray(pt) ==  elePrice(pt)
-        clearDemand_maxPrice_grid = clearDemand_maxPrice_EH1 + clearDemand_maxPrice_EH2 + clearDemand_maxPrice_EH3;
+        clearDemand_maxPrice_grid = clearDemand_maxPrice_EH1 + clearDemand_maxPrice_EH2 + clearDemand_maxPrice_EH3 - EH_res_total(pt);
         if clearDemand_maxPrice_grid > eleLimit_total(1)
             clearDemand_maxPrice_grid = eleLimit_total(1);
         end
@@ -70,12 +70,12 @@ for pt =  1 : 24 * period
     else
         clearDemand_maxPrice_grid =minimumPower;
     end
-    clearDemand_maxPrice = [-clearDemand_maxPrice_grid; clearDemand_maxPrice_EH1; clearDemand_maxPrice_EH2; clearDemand_maxPrice_EH3]; % 需求为正，供给为负
+    clearDemand_maxPrice = [-clearDemand_maxPrice_grid; clearDemand_maxPrice_EH1; clearDemand_maxPrice_EH2; clearDemand_maxPrice_EH3; - EH_res_total(pt)]; % 需求为正，供给为负
 
     iterationNumber = 2;
     if sum(clearDemand_minPrice) * sum(clearDemand_maxPrice) <= 0 % 说明出清点在这个区间内，有两个问题，一是等于零是否直接结束，二是如果出清点不唯一怎么办
         % 市场出清得到出清价格，并更新预测电价序列
-        [priceArray(pt), clearDemand] = iterativeClear(minMarketPrice, maxMarketPrice, clearDemand_minPrice, clearDemand_maxPrice, ee, priceArray, gasPrice1, pt);
+        [priceArray(pt), clearDemand] = iterativeClear(minMarketPrice, maxMarketPrice, clearDemand_minPrice, clearDemand_maxPrice, ee, priceArray, gasPrice1, pt, EH_res_total(pt));
     else
         disp('Clearing point is not in the given interval.')
     end

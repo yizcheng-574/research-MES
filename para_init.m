@@ -24,8 +24,8 @@ Le_max = [1.5 , 1.3 , 1.5] * 1000;
 Lh_max = [2 , 1 , 2] * 1000;
 Le_dr_rate = [0, 0, 0];
 Lh_dr_rate = [0, 0, 0];
-solar_max = [0 , 0.2 , 1] * 1000;
-wind_max = [1.2 , 0.2 , 0] * 1000;
+solar_max = [0 , 0.2 , 1, 0] * 1000;
+wind_max = [1.2 , 0.2 , 0, 0.5] * 1000;
 
 % IES1 居民区
 EH1_Le = loadValue(:,65); 
@@ -53,8 +53,13 @@ EH3_Lh_flag = zeros(24, 1); % 住宅区没有可平移热负荷
 EH3_solarP = solarValue(:,27) ;
 EH3_windP = windValue(:,27);
 
+% 接入系统的可再生能源
+EH_windP_total = windValue(:, 30);
+EH_solarP_total = solarValue(:,30);
+EH_res_total = EH_windP_total / max(EH_windP_total) * wind_max(4) + EH_solarP_total / max(EH_solarP_total) * solar_max(4);
+
 %CHP的参数
-CHP1_para = [0.30, 0.42, Lh_max(1) * 1.2, 0, 1]; % CHP_GE_eff_in, CHP_GH_eff_in, CHP_Prate_in, CHP_Pmin_Rate_in, CHP_ramp_rate
+CHP1_para = [0.30, 0.42, Lh_max(1) * 0.8, 0, 1]; % CHP_GE_eff_in, CHP_GH_eff_in, CHP_Prate_in, CHP_Pmin_Rate_in, CHP_ramp_rate
 CHP2_para = [0.35, 0.45, 0, 0, 0.4];
 CHP3_para = [0.28, 0.56, Lh_max(3) * 1.2, 0, 1];
 
@@ -71,14 +76,13 @@ Boiler3_para = [0.90; 0];
 
 %电储能和热储能
 
-
-ES1_para = [1400, 0.85, 0.15, 0.2, 0.2, 6, 0.9];
-ES2_para = [0, 0.85, 0.15, 0.2, 0.2, 6, 0.9];
-ES3_para = [1400, 0.85, 0.15, 0.2, 0.2, 3, 0.9];
 % HS_totalC_in, HS_maxSOC_in, HS_minSOC_in, HS_currentSOC_in, HS_targetSOC_in, HS_chargeTime, HS_eff_in
+ES1_para = [1400, 0.85, 0.15, 0.5, 0.5, 3, 0.9];
+ES2_para = [0, 0.85, 0.15, 0.5, 0.5, 6, 0.9];
+ES3_para = [1400, 0.85, 0.15, 0.5, 0.5, 3, 0.9];
 HS1_para = [1200, 0.9, 0.1, 0.6, 0.6, 5, 0.9];
-HS2_para = [0, 0.9, 0.1, 0.6, 0.6, 5, 0.9];
-HS3_para = [1200, 0.9, 0.1, 0.5, 0.5, 0.5, 0.9];
+HS2_para = [1200, 0.9, 0.1, 0.6, 0.6, 5, 0.9];
+HS3_para = [0, 0.9, 0.1, 0.5, 0.5, 0.5, 0.9];
 
 IESNUMBER = 3; % IES个数
 
@@ -178,7 +182,7 @@ reverseRate = 4;
 eleLimit1 = [singleLimit(1), -singleLimit(1), 0.94];
 eleLimit2 = [singleLimit(2), -singleLimit(2), 0.94];
 eleLimit3 = [singleLimit(3), -singleLimit(3), 0.94];
-eleLimit_total = [sum(singleLimit) /2.5, 0]; % 馈线
+eleLimit_total = [sum(singleLimit)/2.5, 0]; % 馈线
 
 % 电网
 Grid1 = Grid_171118(eleLimit_total);

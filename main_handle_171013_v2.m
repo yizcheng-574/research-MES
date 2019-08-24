@@ -26,9 +26,12 @@ global period caseType
     c1 = ColorHex('0D56A6');
     c2 = ColorHex('41DB00');
     c3 = ColorHex('A63C00');
+    
+    stackedbar = @(x, A) bar(x, A, 'stacked');
+    prettyline = @(x, y) plot(x, y, 'Color',firebrick, 'LineStyle','-','LineWidth',1.5);
 %--------------------------------------负荷和可再生能源的曲线--------------------------------------
 if caseType ~=32
-    figure(1)
+    figure
     optNumber=24;
     t=1:1:24*period;
     w=1.2;
@@ -48,10 +51,8 @@ if caseType ~=32
         subplot(3 , 2 , (IES_no - 1) * 2 + 1 )
         hold on;
         plot(t, EH_Le_base / 1000, 'Color', 'b', 'LineStyle', '-', 'LineWidth', w)
-%         plot(t, EH_Le / 1000, 'Color', 'b', 'LineStyle', '-', 'LineWidth', w, 'Marker', '.', 'MarkerSize', 13) 
         plot(t, EH_Le_origin / 1000, 'Color', 'b', 'LineStyle', '-.', 'LineWidth', w) 
         plot(t, EH_Lh_base / 1000, 'Color', 'r', 'LineStyle', '-', 'LineWidth',w)
-%         plot(t, EH_Lh / 1000, 'Color', 'r', 'LineStyle', '-', 'LineWidth', w, 'Marker', '.', 'MarkerSize', 13)
         plot(t, EH_Lh_origin / 1000, 'Color', 'r', 'LineStyle', '-.', 'LineWidth', w) 
         xlim([0, 24 * period])
         ylim([0, max(max(EH_Le), max(EH_Lh)) / 1000]);
@@ -113,22 +114,23 @@ if caseType ~=32
     t2 = 0 : 1 : 24 * period;
     optNumber = 24;
     w=1.5;
-    figure;
 %     plot(t1, priceArray_record);
     %--------------------阻塞管理---------------------
     if isCentral == 0
         c4_clearingPrice = priceArray;
-        c4_gridClearDemand = - sum(result_Ele , 2);
+        c4_gridClearDemand = sum(result_Ele , 2) - EH_res_total;
     else
         c4_clearingPrice = elePrice;
-        c4_gridClearDemand = - sum(result_Ele , 2);
+        c4_gridClearDemand = sum(result_Ele , 2) - EH_res_total;
     end
     figure;
     hold on;
     yyaxis left;
-    H1 = bar(t1, -c4_gridClearDemand/1000);
+    H1 = stackedbar(t1, [c4_gridClearDemand, EH_res_total]/1000);
     H1(1).FaceColor = dodgerblue;
     H1(1).EdgeColor = 'none';
+    H1(2).FaceColor = gold;
+    H1(2).EdgeColor = 'none';
     H3 = stairs(t2, ones(24*period+1, 1) .* eleLimit_total(1)/1000, 'Color',gray,'LineStyle','--','LineWidth',1);
     H4 = stairs(t2, ones(24*period+1, 1) * eleLimit_total(2)/1000, 'Color',gray,'LineStyle','--','LineWidth',1);
     ylabel('transformer power(MW)');
@@ -139,8 +141,8 @@ if caseType ~=32
     
     yyaxis right;
     H2 = plot(t1, [c4_clearingPrice, elePrice]);
-    le = legend([H1,H2(1),H2(2)],...
-        'transformer power','hourly clearing price','utility price', 'Orientation', 'horizontal');...
+    le = legend([H1(1), H1(2), H2(1),H2(2)],...
+        'transformer power','renewable energies','hourly clearing price','utility price', 'Orientation', 'vertical');...
     set(le,'Box','off');
     set(H2(1),'Color',firebrick, 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13)
     set(H2(2),'Color',darkblue, 'LineStyle','-','LineWidth',1.5)
@@ -158,10 +160,7 @@ if caseType ~=32
     result_Ele_loss_positive(result_Ele_loss_positive<0) = 0;
     result_Ele_loss_negtive = result_Ele_loss;
     result_Ele_loss_negtive(result_Ele_loss_negtive>0) = 0;
-    
-    stackedbar = @(x, A) bar(x, A, 'stacked');
-    prettyline = @(x, y) plot(x, y, 'Color',firebrick, 'LineStyle','-','LineWidth',1.5);
-    
+
     figure
     if caseType == 31
         st = 2; en = 3;

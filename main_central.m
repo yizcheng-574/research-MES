@@ -36,8 +36,8 @@ for pt = 1: temporal
     
     % 需要额外增加一个购电量的上、下限约束
     A2 = [EH1_A_eleLimit_total, EH2_A_eleLimit_total, EH3_A_eleLimit_total];
-    b2 = ones(time, 1) .* eleLimit_total(1);
-    b2_sale = zeros(time, 1);
+    b2 = ones(time, 1) .* eleLimit_total(1) + EH_res_total(pt : end);
+    b2_sale = zeros(time, 1) + EH_res_total(pt : end);
    
     A = [A1; A2; -A2];
     b = [b1; b2; -b2_sale];

@@ -60,7 +60,7 @@ for pt = st : temporal
         clearDemand_grid_new=zeros(24 * period - pt + 1 ,1);
         for i = 1: 24 * period - pt + 1
             if lamda_new(i) == 0 
-                clearDemand_grid_new(i) = clearDemand_EH1_new(i) + clearDemand_EH2_new(i) + clearDemand_EH3_new(i);
+                clearDemand_grid_new(i) = clearDemand_EH1_new(i) + clearDemand_EH2_new(i) + clearDemand_EH3_new(i) - EH_res_total(pt + i - 1);
                 if clearDemand_grid_new(i) > eleLimit_total(1)
                     clearDemand_grid_new(i) = eleLimit_total(1);
                 end
@@ -74,7 +74,7 @@ for pt = st : temporal
             end
         end
  
-        clearDemand_new = [-clearDemand_grid_new, clearDemand_EH1_new , clearDemand_EH2_new , clearDemand_EH3_new] ;
+        clearDemand_new = [-clearDemand_grid_new, clearDemand_EH1_new , clearDemand_EH2_new , clearDemand_EH3_new, - EH_res_total] ;
         phi(number) = f1 + f2 + f3 - lamda_new'* clearDemand_grid_new;
         if  number == 1
             balanceDemand = sum(clearDemand_new, 2) ;
@@ -110,6 +110,8 @@ for pt = st : temporal
         end
         %当前价格下的出力
         priceArray(pt : 24* period) = prePrice(pt : 24* period) + lamda_new;
+        priceArray(priceArray>maxMarketPrice) =maxMarketPrice;
+        priceArray(priceArray<minMarketPrice) =minMarketPrice;
     end
     
     
