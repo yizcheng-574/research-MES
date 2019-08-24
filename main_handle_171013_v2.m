@@ -134,8 +134,8 @@ if caseType ~=32
     H3 = stairs(t2, ones(24*period+1, 1) .* eleLimit_total(1)/1000, 'Color',gray,'LineStyle','--','LineWidth',1);
     H4 = stairs(t2, ones(24*period+1, 1) * eleLimit_total(2)/1000, 'Color',gray,'LineStyle','--','LineWidth',1);
     ylabel('transformer power(MW)');
-    uplimit= ceil(eleLimit_total(1) / 1000 * 1.1);
-    lowerlimit=ceil(-eleLimit_total(2) / 1000 * 1.1);
+    uplimit= max(c4_gridClearDemand + EH_res_total) / 1000 * 1.1;
+    lowerlimit=-eleLimit_total(2) / 1000 * 1.1;
     ylim([-lowerlimit, uplimit]);
     yticks(-lowerlimit : 1 : uplimit);
     
@@ -207,7 +207,7 @@ if caseType ~=32
         ylim([min(sum(bar_negtive, 2)) * 1.1 - 0.01 ,max(sum(bar_positive, 2)) * 1.1]);
         yticks(-1:0.5:2.5);
         
-        if max(result_ES_discharge(:, IES_no)) > 10 && max(result_ES_charge(:, IES_no)) > 10
+        if max(result_ES_discharge(:, IES_no)) > 0 && max(result_ES_charge(:, IES_no)) > 0
             yyaxis right;
             H2 = prettyline(t2, result_ES_SOC( : , IES_no)); 
             ylabel('SOC');
@@ -220,9 +220,9 @@ if caseType ~=32
         xticks(0:(24 * period / 4) : 24 * period);
         xticklabels({ '0:00','6:00','12:00','18:00','24:00' });
       
-        if IES_no == st
+        if max(result_ES_discharge(:, IES_no)) > 0 && max(result_ES_charge(:, IES_no)) > 0
             le = legend([H1(1), H1(2), H1(3), H1(4), H3(2), H2, H4(1), H4(2)],...
-                'transformer','CHP','renewable energies','EES','EB','SOC of EES','fixed electric load','total electric load',...
+                'transformer','CHP','renewable energies','EES','EB','SOC','fixed load','total load',...
                 'Location','northoutside','Orientation','horizontal');
             set(le, 'Box', 'off');
         end
@@ -286,9 +286,9 @@ if caseType ~=32
         xticks(0 : (24 * period / 4) : 24 * period);
         xticklabels({'0:00','6:00','12:00','18:00','24:00'});
 
-        if IES_no == st
+        if max(result_HS_discharge(:, IES_no)) > 10 && max(result_HS_charge(:, IES_no)) > 10
             le = legend([H1(1),H1(2),H1(3),H1(4),H2,H4(1),H4(2)],...
-                'CHP','GF','EB','TES','SOC of TES','fixed thermal load','total thermal load',...
+                'CHP','GF','EB','TES','SOC','fixed load','total load',...
                 'Location','northoutside','Orientation','horizontal');
             set(le,'Box','off');
         end

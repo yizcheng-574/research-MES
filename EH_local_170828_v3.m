@@ -280,8 +280,12 @@ classdef EH_local_170828_v3 < handle
             obj.result_H_dr(t_current) = x(time * 8 + 1);
             obj.result_eBoiler_E(t_current) = x(time * 9 + 1);
             %更新储能状态
-            obj.ES_SOC(t_current+1) = obj.ES_selfd * obj.ES_SOC(t_current) - obj.result_ES_discharge(t_current) / obj.ES_eff / obj.ES_totalC + obj.result_ES_charge(t_current) * obj.ES_eff / obj.ES_totalC;
-            obj.HS_SOC(t_current+1) = obj.HS_selfd * obj.HS_SOC(t_current) - obj.result_HS_discharge(t_current) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(t_current) * obj.HS_eff / obj.HS_totalC;
+            if obj.ES_totalC ~= 0
+                obj.ES_SOC(t_current+1) = obj.ES_selfd * obj.ES_SOC(t_current) - obj.result_ES_discharge(t_current) / obj.ES_eff / obj.ES_totalC + obj.result_ES_charge(t_current) * obj.ES_eff / obj.ES_totalC;
+            end
+            if obj.HS_totalC ~= 0
+                obj.HS_SOC(t_current+1) = obj.HS_selfd * obj.HS_SOC(t_current) - obj.result_HS_discharge(t_current) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(t_current) * obj.HS_eff / obj.HS_totalC;
+            end
         end
         
         
@@ -305,9 +309,12 @@ classdef EH_local_170828_v3 < handle
                 obj.result_H_dr(pt) = x(time*8+ 1 + pt -t_current);
                 obj.result_eBoiler_E(pt) = x(time * 9 + 1 + pt - t_current);
                 %更新储能状态
-                obj.ES_SOC(pt+1) = obj.ES_selfd * obj.ES_SOC(pt) - obj.result_ES_discharge(pt) / obj.ES_eff / obj.ES_totalC + obj.result_ES_charge(pt) * obj.ES_eff / obj.ES_totalC;
-                obj.HS_SOC(pt+1) = obj.HS_selfd * obj.HS_SOC(pt) - obj.result_HS_discharge(pt) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(pt) * obj.HS_eff / obj.HS_totalC;
-                
+                if obj.ES_totalC ~= 0
+                    obj.ES_SOC(pt+1) = obj.ES_selfd * obj.ES_SOC(pt) - obj.result_ES_discharge(pt) / obj.ES_eff / obj.ES_totalC + obj.result_ES_charge(pt) * obj.ES_eff / obj.ES_totalC;
+                end
+                if obj.HS_totalC ~= 0
+                   obj.HS_SOC(pt+1) = obj.HS_selfd * obj.HS_SOC(pt) - obj.result_HS_discharge(pt) / obj.HS_eff / obj.HS_totalC + obj.result_HS_charge(pt) * obj.HS_eff / obj.HS_totalC;
+                end
             end
         end
         % 输出优化结果
