@@ -73,7 +73,15 @@ for pt =  1 : 24 * period
     clearDemand_maxPrice = [-clearDemand_maxPrice_grid; clearDemand_maxPrice_EH1; clearDemand_maxPrice_EH2; clearDemand_maxPrice_EH3; - EH_res_total(pt)]; % 需求为正，供给为负
 
     iterationNumber = 2;
-    if sum(clearDemand_minPrice) * sum(clearDemand_maxPrice) <= 0 % 说明出清点在这个区间内，有两个问题，一是等于零是否直接结束，二是如果出清点不唯一怎么办
+    balance_minPrice = sum(clearDemand_minPrice);
+    balance_maxPrice = sum(clearDemand_maxPrice);
+    if abs(balance_minPrice) < 10
+        priceArray(pt) = minMarketPrice;
+        clearDemand = clearDemand_minPrice;
+    elseif  abs(balance_maxPrice) < 10
+        priceArray(pt) = maxMarketPrice;
+        clearDemand = clearDemand_maxPrice;
+    elseif balance_minPrice* balance_maxPrice <= 0 % 说明出清点在这个区间内，有两个问题，一是等于零是否直接结束，二是如果出清点不唯一怎么办
         % 市场出清得到出清价格，并更新预测电价序列
         [priceArray(pt), clearDemand] = iterativeClear(minMarketPrice, maxMarketPrice, clearDemand_minPrice, clearDemand_maxPrice, ee, priceArray, gasPrice1, pt, EH_res_total(pt));
     else
@@ -82,7 +90,7 @@ for pt =  1 : 24 * period
     iterationTimes(pt,1) = iterationNumber;
 
     % 得到出清价格后，还要明确出清功率（EH更新自身状态），但此时不能保证各出清功率之和为零？
-    gridClearDemand(pt) = clearDemand(1);
+    gridClearDemand(pt) = sum(clearDemand(2:end-1));
     EH1.conditionHandlePrice_2(priceArray, gasPrice1, pt, clearDemand(2));
     EH2.conditionHandlePrice_2(priceArray, gasPrice1, pt, clearDemand(3));
     EH3.conditionHandlePrice_2(priceArray, gasPrice1, pt, clearDemand(4));

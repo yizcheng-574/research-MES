@@ -68,19 +68,23 @@ if caseType ~=32
  
         subplot(3,2,(IES_no - 1) * 2 + 2)
         hold on
-        plot(t, EH_solarP / 1000, 'Color', 'k', 'LineStyle', '-', 'LineWidth', w);
-        plot(t, EH_windP / 1000, 'Color', 'k', 'LineStyle', '--', 'LineWidth', w);
+        if solar_max(IES_no) > 0
+            plot(t, EH_solarP / 1000, 'Color', 'k', 'LineStyle', '-', 'LineWidth', w);
+            le = legend('PV','Location','northoutside','Orientation','horizontal');
+        end
+        if wind_max(IES_no) > 0
+            plot(t, EH_windP / 1000, 'Color', 'k', 'LineStyle', '--', 'LineWidth', w);
+            le = legend('wind','Location','northoutside','Orientation','horizontal');
+        end
+        set(le,'Box','off');
         xlim([0, 24*period]);
         xticks(0 : (24 * period /4) : 24 * period);
         xticklabels({'0:00','6:00','12:00','18:00','24:00'});
         xlabel(sprintf('MES%d', IES_no))
         ylabel('power(MW)')
-        if IES_no == 1
-            le = legend('PV','wind','Location','northoutside','Orientation','horizontal');
-            set(le,'Box','off');
-        end
+            
     end
-    set(gcf,'Position',[0 0 800 500]);
+    set(gcf,'Position',[0 0 650 500]);
     
     
     %--------------------------------------数据处理--------------------------------------
@@ -133,7 +137,7 @@ if caseType ~=32
     H1(2).EdgeColor = 'none';
     H3 = stairs(t2, ones(24*period+1, 1) .* eleLimit_total(1)/1000, 'Color',gray,'LineStyle','--','LineWidth',1);
     H4 = stairs(t2, ones(24*period+1, 1) * eleLimit_total(2)/1000, 'Color',gray,'LineStyle','--','LineWidth',1);
-    ylabel('transformer power(MW)');
+    ylabel('power(MW)');
     uplimit= max(c4_gridClearDemand + EH_res_total) / 1000 * 1.1;
     lowerlimit=-eleLimit_total(2) / 1000 * 1.1;
     ylim([-lowerlimit, uplimit]);
@@ -142,7 +146,7 @@ if caseType ~=32
     yyaxis right;
     H2 = plot(t1, [c4_clearingPrice, elePrice]);
     le = legend([H1(1), H1(2), H2(1),H2(2)],...
-        'transformer power','renewable energies','hourly clearing price','utility price', 'Orientation', 'vertical');...
+        'transformer power','wind integrated into the IMES','hourly clearing price','utility price', 'Orientation', 'vertical');...
     set(le,'Box','off');
     set(H2(1),'Color',firebrick, 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13)
     set(H2(2),'Color',darkblue, 'LineStyle','-','LineWidth',1.5)
@@ -203,9 +207,8 @@ if caseType ~=32
         set(H4(1), 'Color', 'black', 'LineStyle', '-.', 'LineWidth', 1.5);
         set(H4(2), 'Color', 'black', 'LineStyle', '-', 'LineWidth', 1.5);
 
-        ylabel('electric power(MW)');
+        ylabel('power(MW)');
         ylim([min(sum(bar_negtive, 2)) * 1.1 - 0.01 ,max(sum(bar_positive, 2)) * 1.1]);
-        yticks(-1:0.5:2.5);
         
         if max(result_ES_discharge(:, IES_no)) > 0 && max(result_ES_charge(:, IES_no)) > 0
             yyaxis right;
@@ -222,11 +225,12 @@ if caseType ~=32
       
         if max(result_ES_discharge(:, IES_no)) > 0 && max(result_ES_charge(:, IES_no)) > 0
             le = legend([H1(1), H1(2), H1(3), H1(4), H3(2), H2, H4(1), H4(2)],...
-                'transformer','CHP','renewable energies','EES','EB','SOC','fixed load','total load',...
+                'imported','CHP','renewable energies','EES','EB','SOC','fixed load','total load',...
                 'Location','northoutside','Orientation','horizontal');
             set(le, 'Box', 'off');
         end
-        set(gcf,'Position',[0 0 550 500]);
+%         set(gcf,'Position',[0 0 660 500]);
+        set(gcf,'Position',[0 0 590 500]);
         fig = fig + 1;
     end
     %%%%%%%%%%%%%%
@@ -269,9 +273,8 @@ if caseType ~=32
         set(H4(1), 'Color', 'black', 'LineStyle', '-.', 'LineWidth', 1.5);
         set(H4(2), 'Color', 'black', 'LineStyle', '-', 'LineWidth', 1.5);
        
-        ylabel('thermal power(MW)');
+        ylabel('power(MW)');
         ylim([min(sum(bar_negtive, 2)) * 1.1 - 0.01,max(sum(bar_positive, 2)) * 1.1]);
-        yticks(-1 : 0.5 : 2);
         if max(result_HS_discharge(:, IES_no)) > 10 && max(result_HS_charge(:, IES_no)) > 10
             yyaxis right;
             H2 = prettyline(t2, result_HS_SOC(:,IES_no));
@@ -292,7 +295,8 @@ if caseType ~=32
                 'Location','northoutside','Orientation','horizontal');
             set(le,'Box','off');
         end
-        set(gcf,'Position',[0 0 500 500]);
+%         set(gcf,'Position',[0 0 660 500]);
+        set(gcf,'Position',[0 0 590 500]);
         fig = fig + 1;
     end
 end

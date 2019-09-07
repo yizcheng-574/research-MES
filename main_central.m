@@ -20,18 +20,11 @@ for pt = 1: temporal
     f = [EH1_f; EH2_f; EH3_f];
     ub = [EH1_ub; EH2_ub; EH3_ub];
     lb = [EH1_lb; EH2_lb; EH3_lb];
-    [lr , lc] = size(EH1_Aeq);
-    Aeq = zeros( lr*number, lc*number);
-    for i= 1 : number
-        eval(['Aeq((i-1)*lr+1:lr*i,(i-1)*lc+1:lc*i) = EH',num2str(i),'_Aeq;']);
-    end
-    beq = [EH1_beq; EH2_beq; EH3_beq];
     
-    [lr , lc] = size(EH1_A);
-    A1 = zeros( lr*number, lc*number);
-    for i= 1 : number
-        eval(['A1((i-1)*lr+1:lr*i,(i-1)*lc+1:lc*i) = EH',num2str(i),'_A;']);
-    end
+    Aeq = blkdiag(EH1_Aeq, EH2_Aeq, EH3_Aeq);
+    beq = [EH1_beq; EH2_beq; EH3_beq];
+ 
+    A1 = blkdiag(EH1_A, EH2_A, EH3_A);
     b1 = [EH1_b; EH2_b; EH3_b];
     
     % 需要额外增加一个购电量的上、下限约束

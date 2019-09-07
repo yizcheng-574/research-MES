@@ -6,40 +6,35 @@ close all
 global period off_grid EH1 EH2 EH3 Grid1 IESNUMBER eleLimit_total caseType feedInPrice %feed-in tariff设置很大即是关掉
 period = 60 / 60; % 分母是时间间隔
 
-if period == 1
-    load '../tmp1.mat' % 有177家公司
-    load '../tmp2.mat'
-    load '../renewableName.mat'
-    load '../solarValue.mat'
-    load '../windValue.mat'
-elseif period == 4 % 只有174家公司了
-    load data_loadValue_15min.mat
-    load data_loadName_15min.mat
-    load renewableName_15min.mat
-    load solarValue_15min.mat
-    load windValue_15min.mat
-end
+load '../tmp1.mat'
+load '../tmp2.mat'
+load '../renewableName.mat'
+load '../solarValue.mat'
+load '../windValue.mat'
+load '../singleWindValue.mat'
+load '../singleLoadValue.mat'
+
 load '../gridPriceRecord'
-Le_max = [1.5 , 1.3 , 1.5] * 1000;
-Lh_max = [2 , 1 , 2] * 1000;
-Le_dr_rate = [0.2, 0, 0];
-Lh_dr_rate = [0, 0, 0.2];
-solar_max = [0 , 0.2 , 1, 0] * 1000;
-wind_max = [1.2 , 0.2 , 0, 1] * 1000;
+Le_max = [0.9 , 1.5 , 3] * 1000;
+Lh_max = [1.5 , 1.8 , 4] * 1000;
+Le_dr_rate = [0, 0.2, 0];
+Lh_dr_rate = [0, 0, 0];
+solar_max = [0 , 0.6 , 1.2, 0] * 1000;
+wind_max = [0.55 , 0, 0, 0.6] * 1000;
 
 % IES1 居民区
-EH1_Le = loadValue(:,65); 
+EH1_Le = loadPower(:,1); 
 EH1_Lh = circshift(loadValue(:,112),9);
 EH1_solarP = solarValue(:,3) ; 
-EH1_windP = windValue(:,3); 
+EH1_windP = windPower(3,:)'; 
 EH1_Le_flag = zeros(24, 1); EH1_Le_flag(1:3) = ones(3, 1);  EH1_Le_flag(16:23) = ones(8,1);
 EH1_Lh_flag = zeros(24, 1); EH1_Lh_flag(1:3) = ones(3, 1);  EH1_Lh_flag(16:23) = ones(8,1);
 
 % IES2 住宅区，电热负荷白天低，晚上高，热电相当，资源丰富型
-EH2_Le = loadValue(:,172);
-EH2_Lh = circshift(loadValue(:, 68), 15); 
+EH2_Le = loadPower(:,3);
+EH2_Lh = circshift(loadValue(:, 113), 9); 
 EH2_solarP = solarValue(:,1) ;
-EH2_windP = [windValue(12:end,1);windValue(1:11,1)];
+EH2_windP = windPower(1,:)';
 EH2_Le_flag = zeros(24, 1); EH2_Le_flag(1:6) = ones(6,1);  EH2_Le_flag(20:24) = ones(5,1);
 EH2_Lh_flag = zeros(24, 1); % 商业区没有可平移热负荷
 
@@ -54,35 +49,34 @@ EH3_solarP = solarValue(:,27) ;
 EH3_windP = windValue(:,27);
 
 % 接入系统的可再生能源
-EH_windP_total = windValue(:, 21);
+EH_windP_total = windPower(2,:)'; 
 EH_solarP_total = solarValue(:,30);
 EH_res_total = EH_windP_total / max(EH_windP_total) * wind_max(4) + EH_solarP_total / max(EH_solarP_total) * solar_max(4);
-
 %CHP的参数
-CHP1_para = [0.30, 0.42, Lh_max(1) * 0.8, 0, 0.4]; % CHP_GE_eff_in, CHP_GH_eff_in, CHP_Prate_in, CHP_Pmin_Rate_in, CHP_ramp_rate
-CHP2_para = [0.35, 0.45, 0, 0, 0.4];
-CHP3_para = [0.28, 0.56, Lh_max(3) * 1.4, 0, 0.4];
+CHP1_para = [0.30, 0.42, Lh_max(1), 0.1, 1]; % CHP_GE_eff_in, CHP_GH_eff_in, CHP_Prate_in, CHP_Pmin_Rate_in, CHP_ramp_rate
+CHP2_para = [0.35, 0.45, 0, 0, 1];
+CHP3_para = [0.28, 0.56, Lh_max(3), 0.1, 1];
 
 
 %电锅炉
 eBoiler1_para = [0.98; 0; 0; 0.5]; % eBoiler_eff_in, eBoiler_Prate_in, eBoiler_Prate_min, eBoiler_Prate_ramp
-eBoiler2_para = [0.98; Le_max(2) * 0.6; 0; 0.5];
+eBoiler2_para = [0.98; Le_max(2) * 0.7; 0; 0.3];
 eBoiler3_para = [0.98; 0; 0; 0.5];
 
 %燃气锅炉
 Boiler1_para = [0.90; 0]; % Boiler_eff_in, Boiler_Prate_in
-Boiler2_para = [0.90; Lh_max(2) * 0.7];
+Boiler2_para = [0.90; Lh_max(2) * 0.9];
 Boiler3_para = [0.90; 0];
 
 %电储能和热储能
 
 % HS_totalC_in, HS_maxSOC_in, HS_minSOC_in, HS_currentSOC_in, HS_targetSOC_in, HS_chargeTime, HS_eff_in
-ES1_para = [0, 0.85, 0.15, 0.2, 0.2, 3, 0.9];
-ES2_para = [0, 0.85, 0.15, 0.2, 0.2, 6, 0.9];
-ES3_para = [1200, 0.85, 0.15, 0.2, 0.2, 3, 0.9];
-HS1_para = [1000, 0.9, 0.1, 0.6, 0.6, 5, 0.9];
-HS2_para = [1000, 0.9, 0.1, 0.6, 0.6, 5, 0.9];
-HS3_para = [0, 0.9, 0.1, 0.5, 0.5, 0.5, 0.9];
+ES1_para = [1600, 0.85, 0.1, 0.2, 0.2, 3, 0.95];
+ES2_para = [1500, 0.85, 0.1, 0.2, 0.2, 4, 0.95];
+ES3_para = [1400, 0.85, 0.1, 0.2, 0.2, 3, 0.95];
+HS1_para = [0, 0.9, 0.1, 0.6, 0.6, 5, 0.9];
+HS2_para = [1200, 0.9, 0.1, 0.6, 0.6, 5, 0.9];
+HS3_para = [0, 0.9, 0.1, 0.5, 0.5, 5, 0.9];
 
 IESNUMBER = 3; % IES个数
 
@@ -174,15 +168,15 @@ EH1_Lh_drP_total = EH1_Lh_drP_rate * 4;
 EH2_Lh_drP_total = EH2_Lh_drP_rate * 4;
 EH3_Lh_drP_total = EH3_Lh_drP_rate * 4;
 
-singleLimit = Le_max * 1.2;
+singleLimit = Le_max * 1.5;
 % totalLimit = 1.2 * mean(EH1_Le_jing) + mean(EH2_Le_jing) + mean(EH3_Le_jing)+...
 %     (EH1_Le_drP_total +EH1_Le_drP_total + EH1_Le_drP_total )/(24 * period) ;
 reverseRate = 4;
 % 支线: 下级向上级购电、售电约束，再加一个线损率5-7%
-eleLimit1 = [singleLimit(1), -singleLimit(1), 0.94];
-eleLimit2 = [singleLimit(2), -singleLimit(2), 0.94];
-eleLimit3 = [singleLimit(3), -singleLimit(3), 0.94];
-eleLimit_total = [sum(singleLimit)/3.2, 0]; % 馈线
+eleLimit1 = [singleLimit(1), -singleLimit(1), 1];
+eleLimit2 = [singleLimit(2), -singleLimit(2), 1];
+eleLimit3 = [singleLimit(3), -singleLimit(3), 1];
+eleLimit_total = [sum(singleLimit)/3, 0]; % 馈线
 
 % 电网
 Grid1 = Grid_171118(eleLimit_total);
