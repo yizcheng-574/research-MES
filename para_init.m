@@ -13,8 +13,9 @@ load '../solarValue.mat'
 load '../windValue.mat'
 load '../singleWindValue.mat'
 load '../singleLoadValue.mat'
-
 load '../gridPriceRecord'
+
+isCollaborate = 1;
 Le_max = [0.9 , 1.5 , 3] * 1000;
 Lh_max = [1.5 , 1.8 , 4] * 1000;
 Le_dr_rate = [0, 0.2, 0];
@@ -74,9 +75,9 @@ Boiler3_para = [0.90; 0];
 ES1_para = [1600, 0.85, 0.1, 0.2, 0.2, 3, 0.95];
 ES2_para = [1500, 0.85, 0.1, 0.2, 0.2, 4, 0.95];
 ES3_para = [1400, 0.85, 0.1, 0.2, 0.2, 3, 0.95];
-HS1_para = [0, 0.9, 0.1, 0.6, 0.6, 5, 0.9];
-HS2_para = [1200, 0.9, 0.1, 0.6, 0.6, 5, 0.9];
-HS3_para = [0, 0.9, 0.1, 0.5, 0.5, 5, 0.9];
+HS1_para = [1200, 0.9, 0.1, 0.6, 0.6, 4, 0.9];
+HS2_para = [1200, 0.9, 0.1, 0.6, 0.6, 4, 0.9];
+HS3_para = [1400, 0.9, 0.1, 0.5, 0.5, 4, 0.9];
 
 IESNUMBER = 3; % IES个数
 
@@ -176,8 +177,11 @@ reverseRate = 4;
 eleLimit1 = [singleLimit(1), -singleLimit(1), 1];
 eleLimit2 = [singleLimit(2), -singleLimit(2), 1];
 eleLimit3 = [singleLimit(3), -singleLimit(3), 1];
-eleLimit_total = [sum(singleLimit)/3, 0]; % 馈线
-
+if isCollaborate == 1
+    eleLimit_total = [sum(singleLimit)/3, 0];
+else
+    eleLimit_total = [sum(singleLimit), -sum(singleLimit)] * 10;
+end
 % 电网
 Grid1 = Grid_171118(eleLimit_total);
 % EH参数与实例化

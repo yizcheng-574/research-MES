@@ -1,6 +1,11 @@
+
+if isCollaborate == 0
+    save('autonmous.mat');
+else
 close all
 % 数据处理
-global period caseType
+global period
+    
 %--------------------颜色尝试---------------------
     orange = [1 0.65 0];
     gold = [1 0.843 0];
@@ -29,8 +34,7 @@ global period caseType
     
     stackedbar = @(x, A) bar(x, A, 'stacked');
     prettyline = @(x, y) plot(x, y, 'Color',firebrick, 'LineStyle','-','LineWidth',1.5);
-%--------------------------------------负荷和可再生能源的曲线--------------------------------------
-if caseType ~=32
+%----------------负荷和可再生能源的曲线----------------
     figure
     optNumber=24;
     t=1:1:24*period;
@@ -87,7 +91,7 @@ if caseType ~=32
     set(gcf,'Position',[0 0 650 500]);
     
     
-    %--------------------------------------数据处理--------------------------------------
+    %------------------数据处理----------------
     result_Gas = result_CHP_G + result_Boiler_G;
     for IES_no = 1 : 3
         eval(['result_Ele_loss(:,IES_no) = result_Ele(:,IES_no) .* EH',num2str(IES_no),'.Ele_eff;']); % eleLimit(3)是线损率
@@ -96,7 +100,7 @@ if caseType ~=32
         eval(['result_Boiler_heat(:,IES_no) = result_Boiler_G(:,IES_no) .* EH',num2str(IES_no),'.Boiler_eff;']);
         eval(['result_eBoiler_H(:, IES_no) = result_eBoiler_E(:, IES_no) .* EH',num2str(IES_no),'.eBoiler_eff;']);
     end
-    %--------------------------------------测试优化结果--------------------------------------
+    %------------------测试优化结果-------------
     ee = 1e-3;
     
     % 当储能的最大充、放电功率很大时，1000 * 1e-3 也会越线，因此应该提前将1e-3置为0
@@ -106,47 +110,48 @@ if caseType ~=32
     result_HS_charge(result_HS_charge < ee) = 0;
     
     % 计算
-    %计算总成本 按网价计算
+    % 计算总成本 按网价计算
     if exist('priceArray', 'var')
         cost_clear =  (result_Ele' * priceArray + sum(result_Gas)' * gasPrice1) / period;
     end
     cost_utility = (result_Ele' *  elePrice + sum(result_Gas)' * gasPrice1) / period;
     
     totalCost = sum(cost_utility)
-    % --------------------------------------绘图--------------------------------------
+    % ------------------绘图-------------------
     t1 = 1 : 1 : 24 * period;
     t2 = 0 : 1 : 24 * period;
     optNumber = 24;
     w=1.5;
-%     plot(t1, priceArray_record);
-    %--------------------阻塞管理---------------------
-    if isCentral == 0
-        c4_clearingPrice = priceArray;
-        c4_gridClearDemand = sum(result_Ele , 2) - EH_res_total;
-    else
-        c4_clearingPrice = elePrice;
-        c4_gridClearDemand = sum(result_Ele , 2) - EH_res_total;
-    end
+    %-----------------阻塞管理-----------------
+    c4_clearingPrice = priceArray;
+    c4_gridClearDemand = sum(result_Ele , 2) - EH_res_total;
+    
+    result_Ele_collaborate = result_Ele;
+    load('autonmous.mat', 'result_Ele');
+    result_Ele_autonomous = result_Ele;   
+    result_Ele = result_Ele_collaborate;
+    
+    c4_gridClearDemand_autonomous = sum(result_Ele_autonomous , 2) - EH_res_total;
+
     figure;
     hold on;
     yyaxis left;
-    H1 = stackedbar(t1, [c4_gridClearDemand, EH_res_total]/1000);
+    H1 = bar(t1, [c4_gridClearDemand, c4_gridClearDemand_autonomous]/1000);
     H1(1).FaceColor = dodgerblue;
     H1(1).EdgeColor = 'none';
-    H1(2).FaceColor = gold;
+    H1(2).FaceColor = yellowgreen;
     H1(2).EdgeColor = 'none';
     H3 = stairs(t2, ones(24*period+1, 1) .* eleLimit_total(1)/1000, 'Color',gray,'LineStyle','--','LineWidth',1);
     H4 = stairs(t2, ones(24*period+1, 1) * eleLimit_total(2)/1000, 'Color',gray,'LineStyle','--','LineWidth',1);
-    ylabel('power(MW)');
+    ylabel('transformer power(MW)');
     uplimit= max(c4_gridClearDemand + EH_res_total) / 1000 * 1.1;
     lowerlimit=-eleLimit_total(2) / 1000 * 1.1;
-    ylim([-lowerlimit, uplimit]);
-    yticks(-lowerlimit : 1 : uplimit);
     
     yyaxis right;
     H2 = plot(t1, [c4_clearingPrice, elePrice]);
     le = legend([H1(1), H1(2), H2(1),H2(2)],...
-        'transformer power','wind integrated into the IMES','hourly clearing price','utility price', 'Orientation', 'vertical');...
+        'collaborative autonomous','autonomous','hourly clearing price','utility price', 'Orientation', 'horizontal');...
+    
     set(le,'Box','off');
     set(H2(1),'Color',firebrick, 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13)
     set(H2(2),'Color',darkblue, 'LineStyle','-','LineWidth',1.5)
@@ -157,22 +162,22 @@ if caseType ~=32
     xlim([0, 24 * period + 1]);
     xticks(0 : (24*period/4):24*period);
     xticklabels({'0:00','6:00','12:00','18:00','24:00'});
-    set(gcf,'Position',[0 0 400 200]);
+    set(gcf,'Position',[0 0 500 200]);
     
-    %--------------------优化结果2---------------------
+    %----------------协同与不协同各MES对比----
+    drawMES_stacked(t1, result_Ele_collaborate, EH_res_total, -3e3, 4e3, eleLimit_total(1));
+    drawMES_stacked(t1, result_Ele_autonomous, EH_res_total, -3e3, 4e3, eleLimit_total(1));
+%     drawMES(t1, result_Ele_collaborate, -1500, 2250);
+%     drawMES(t1, result_Ele_autonomous, -1500, 2250);
+
+    %----------------优化结果2---------------
     result_Ele_loss_positive = result_Ele_loss;
     result_Ele_loss_positive(result_Ele_loss_positive<0) = 0;
     result_Ele_loss_negtive = result_Ele_loss;
     result_Ele_loss_negtive(result_Ele_loss_negtive>0) = 0;
 
     figure
-    if caseType == 31
-        st = 2; en = 3;
-    elseif caseType == 32
-        %TODO
-    else
-        st = 1; en =3;
-    end
+    st = 1; en =3;
     fig = 1;
     for IES_no = st : en
         subplot(en - st + 1, 1, fig)
@@ -233,16 +238,9 @@ if caseType ~=32
         set(gcf,'Position',[0 0 590 500]);
         fig = fig + 1;
     end
-    %%%%%%%%%%%%%%
     
     figure
-    if caseType == 31
-        st = 3; en = 3;
-    elseif caseType == 32
-        %TODO
-    else
-        st = 1; en =3;
-    end
+    st = 1; en =3;
     fig = 1;
     for IES_no = st : en
         subplot(en - st + 1, 1, fig)
@@ -299,31 +297,6 @@ if caseType ~=32
         set(gcf,'Position',[0 0 590 500]);
         fig = fig + 1;
     end
-end
-
-if caseType == 32
-minMarketPrice = 0.1;
-maxMarketPrice = 1;
-figure
-    hold on;
-    price = minMarketPrice : 0.01 : 1;
     
-    H1= plot(price, demand(1, : ) / 1000);
-    H3= plot(price, demandNoThss(1, : ) / 1000);
-    H4= plot(price, demandNoSS(1, : ) / 1000);
-    H2= plot(price, demandNoESS(1, : ) / 1000);
-    
-    set(H1(1), 'Color', 'red', 'LineWidth', 1.5);
-    set(H2(1), 'Color', 'black', 'LineWidth',1.5);
-    set(H3(1), 'Color', 'black', 'LineStyle', ':', 'LineWidth', 2, 'Marker', '.', 'MarkerSize', 12);
-    set(H4(1), 'Color', royalblue, 'LineStyle', ':', 'LineWidth', 3);
-    xlabel('electricity price（yuan)')
-    ylabel('demand for electricity(MW)')
-    le = legend([H1(1),H2(1),H3(1),H4(1)],...
-        'EES+TES', 'TES','EES','no storages',...
-        'Location','northoutside','Orientation','horizontal');
-    set(le,'Box','off');
-    set(gcf,'Position',[0 0 500 200]);
-
 end
 
