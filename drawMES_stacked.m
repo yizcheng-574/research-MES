@@ -1,6 +1,5 @@
-function [] = drawMES_stacked(t, result_Ele,EH_res_total, ymin, ymax, limit)
+function [c4_gridClearDemand] = drawMES_stacked(t, result_Ele,EH_res_total, ymin, ymax, limit)
     c4_gridClearDemand = sum(result_Ele , 2) - EH_res_total;   
-    
     result_Ele_positive = result_Ele;
     result_Ele_positive(result_Ele_positive < 0) = 0; 
     result_Ele_negative = result_Ele;
@@ -29,7 +28,7 @@ function [] = drawMES_stacked(t, result_Ele,EH_res_total, ymin, ymax, limit)
     H2(3).FaceColor = color_mes3;
     H2(4).FaceColor = gold;
     P = plot(t, c4_gridClearDemand/1000);
-    set(P, 'Color', 'black', 'LineWidth', 1.5);
+    set(P, 'Color','Black', 'LineWidth', 1.5);
     if nargin > 5
        plot([0, t], ones(25, 1) * limit/1000, 'Color',[0.5 0.5 0.5],'LineStyle','--','LineWidth',1);
     end
@@ -39,7 +38,7 @@ function [] = drawMES_stacked(t, result_Ele,EH_res_total, ymin, ymax, limit)
     xticks(0: 6 : 24);
     xticklabels({ '0:00','6:00','12:00','18:00','24:00' });
     le = legend([H1(1), H1(2), H1(3), H2(4), P], ...
-        'MES_1', 'MES_2', 'MES_3', 'wind integrated into the IMES', 'main transformer',...
+        'MES_1', 'MES_2', 'MES_3', 'RES integrated into the IMES', 'main transformer',...
         'Orientation','horizontal');
     set(le,'Box','off');
     set(gcf,'Position',[0 0 500 200]);

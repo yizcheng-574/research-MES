@@ -62,7 +62,7 @@ global period
         ylim([0, max(max(EH_Le), max(EH_Lh)) / 1000]);
         xticks(0 : (24 * period / 4) : 24 * period);
         xticklabels({ '0:00', '6:00', '12:00', '18:00', '24:00' });
-        xlabel(sprintf('MES%d', IES_no))
+        xlabel(sprintf('MES_%d', IES_no))
         ylabel('Load(MW)')
         if IES_no == 1
             H1 = legend('fixed electric load','total electric load','fixed thermal load','total thermal load',...
@@ -84,7 +84,7 @@ global period
         xlim([0, 24*period]);
         xticks(0 : (24 * period /4) : 24 * period);
         xticklabels({'0:00','6:00','12:00','18:00','24:00'});
-        xlabel(sprintf('MES%d', IES_no))
+        xlabel(sprintf('MES_%d', IES_no))
         ylabel('power(MW)')
             
     end
@@ -123,7 +123,11 @@ global period
     optNumber = 24;
     w=1.5;
     %-----------------阻塞管理-----------------
-    c4_clearingPrice = priceArray;
+    if isCentral == 0
+        c4_clearingPrice = priceArray;
+    else
+        c4_clearingPrice = elePrice;
+    end
     c4_gridClearDemand = sum(result_Ele , 2) - EH_res_total;
     
     result_Ele_collaborate = result_Ele;
@@ -165,11 +169,39 @@ global period
     set(gcf,'Position',[0 0 500 200]);
     
     %----------------协同与不协同各MES对比----
-    drawMES_stacked(t1, result_Ele_collaborate, EH_res_total, -3e3, 4e3, eleLimit_total(1));
-    drawMES_stacked(t1, result_Ele_autonomous, EH_res_total, -3e3, 4e3, eleLimit_total(1));
+    [c4_gridClearDemand_collaborate] = drawMES_stacked(t1, result_Ele_collaborate, EH_res_total, -3e3, 4e3, eleLimit_total(1));
+    [c4_gridClearDemand_autonomous] = drawMES_stacked(t1, result_Ele_autonomous, EH_res_total, -3e3, 4e3, eleLimit_total(1));
 %     drawMES(t1, result_Ele_collaborate, -1500, 2250);
 %     drawMES(t1, result_Ele_autonomous, -1500, 2250);
+   
+    %--------------消纳率计算---------------
+    unaccomodated_res_collaborate = EH_res_total;
+    unaccomodated_res_autonomous = EH_res_total;
+    unaccomodated_res_total_collaborate = 0;
+    unaccomodated_res_total_autonomous = 0;
 
+    for tmp_t = 1 : 24
+        for tmp_ies = 1 : 3
+            if result_Ele_collaborate(tmp_t, tmp_ies) < 0
+                unaccomodated_res_collaborate(tmp_t) = unaccomodated_res_collaborate(tmp_t) +...
+                    min(-result_Ele_collaborate(tmp_t, tmp_ies), result_EH_windP(tmp_t, tmp_ies) + result_EH_solarP(tmp_t, tmp_ies));
+            end
+            if result_Ele_autonomous(tmp_t, tmp_ies) < 0
+                unaccomodated_res_autonomous(tmp_t) = unaccomodated_res_autonomous(tmp_t) +...
+                    min(-result_Ele_autonomous(tmp_t, tmp_ies), result_EH_windP(tmp_t, tmp_ies) + result_EH_solarP(tmp_t, tmp_ies));
+            end
+        end
+        if c4_gridClearDemand_collaborate(tmp_t) < 0
+            unaccomodated_res_total_collaborate = unaccomodated_res_total_collaborate + ...
+                    min(-c4_gridClearDemand_collaborate(tmp_t), unaccomodated_res_collaborate(tmp_t) + EH_res_total(tmp_t));
+        end
+        if c4_gridClearDemand_autonomous(tmp_t) < 0
+            unaccomodated_res_total_autonomous = unaccomodated_res_total_autonomous + ...
+                    min(-c4_gridClearDemand_autonomous(tmp_t), unaccomodated_res_autonomous(tmp_t) + EH_res_total(tmp_t));
+        end
+    end
+    disp(unaccomodated_res_total_collaborate/res_total)
+    disp(unaccomodated_res_total_autonomous/res_total)
     %----------------优化结果2---------------
     result_Ele_loss_positive = result_Ele_loss;
     result_Ele_loss_positive(result_Ele_loss_positive<0) = 0;
@@ -223,7 +255,7 @@ global period
             yticks(0.1:0.2:1);
         end
         
-        xlabel(sprintf('MES%d', IES_no));
+        xlabel(sprintf('MES_%d', IES_no));
         xlim([0, 24 * period + 1]);
         xticks(0:(24 * period / 4) : 24 * period);
         xticklabels({ '0:00','6:00','12:00','18:00','24:00' });
@@ -282,7 +314,7 @@ global period
         end
        
         
-        xlabel(sprintf('MES%d',IES_no));
+        xlabel(sprintf('MES_%d',IES_no));
         xlim([0, 24 * period + 1]);
         xticks(0 : (24 * period / 4) : 24 * period);
         xticklabels({'0:00','6:00','12:00','18:00','24:00'});

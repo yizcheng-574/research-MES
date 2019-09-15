@@ -16,15 +16,14 @@ load '../singleLoadValue.mat'
 load '../gridPriceRecord'
 
 isCollaborate = 1;
-Le_max = [0.9 , 1.5 , 3] * 1000;
+Le_max = [1.2 , 1.5 , 3] * 1000;
 Lh_max = [1.5 , 1.8 , 4] * 1000;
 Le_dr_rate = [0, 0.2, 0];
 Lh_dr_rate = [0, 0, 0];
-solar_max = [0 , 0.6 , 1.2, 0] * 1000;
-wind_max = [0.55 , 0, 0, 0.6] * 1000;
-
+solar_max = [0 , 0.6 , 0.6, 0.3] * 1000;
+wind_max = [0.6 , 0, 0, 0.4] * 1000;
 % IES1 居民区
-EH1_Le = loadPower(:,1); 
+EH1_Le = loadPower(:,1) - 0.4; 
 EH1_Lh = circshift(loadValue(:,112),9);
 EH1_solarP = solarValue(:,3) ; 
 EH1_windP = windPower(3,:)'; 
@@ -32,7 +31,7 @@ EH1_Le_flag = zeros(24, 1); EH1_Le_flag(1:3) = ones(3, 1);  EH1_Le_flag(16:23) =
 EH1_Lh_flag = zeros(24, 1); EH1_Lh_flag(1:3) = ones(3, 1);  EH1_Lh_flag(16:23) = ones(8,1);
 
 % IES2 住宅区，电热负荷白天低，晚上高，热电相当，资源丰富型
-EH2_Le = loadPower(:,3);
+EH2_Le = loadPower(:,3) - 0.4;
 EH2_Lh = circshift(loadValue(:, 113), 9); 
 EH2_solarP = solarValue(:,1) ;
 EH2_windP = windPower(1,:)';
@@ -41,27 +40,27 @@ EH2_Lh_flag = zeros(24, 1); % 商业区没有可平移热负荷
 
 
 % IES3 商务区，电热负荷白天高，晚上很低，热电相当，电有驼峰，负荷型
-EH3_Le = loadValue(:,88) ; % 对应127号公司 %/8
+EH3_Le = loadValue(:,88) -1000 ; % 对应127号公司 %/8
 EH3_Lh = loadValue(:,91) ; % 对应130号公司 %/6
 EH3_Le_flag = zeros(24, 1); EH3_Le_flag(9:20) = ones(12,1); 
 EH3_Lh_flag = zeros(24, 1); EH1_Lh_flag(1:3) = ones(3, 1);  EH3_Lh_flag(16:23) = ones(8,1);
 
 EH3_solarP = solarValue(:,27) ;
-EH3_windP = windValue(:,27);
+EH3_windP = windPower(2,:)';
 
 % 接入系统的可再生能源
 EH_windP_total = windPower(2,:)'; 
 EH_solarP_total = solarValue(:,30);
 EH_res_total = EH_windP_total / max(EH_windP_total) * wind_max(4) + EH_solarP_total / max(EH_solarP_total) * solar_max(4);
 %CHP的参数
-CHP1_para = [0.30, 0.42, Lh_max(1), 0.1, 1]; % CHP_GE_eff_in, CHP_GH_eff_in, CHP_Prate_in, CHP_Pmin_Rate_in, CHP_ramp_rate
+CHP1_para = [0.30, 0.42, Lh_max(1), 0.1, 0.5]; % CHP_GE_eff_in, CHP_GH_eff_in, CHP_Prate_in, CHP_Pmin_Rate_in, CHP_ramp_rate
 CHP2_para = [0.35, 0.45, 0, 0, 1];
-CHP3_para = [0.28, 0.56, Lh_max(3), 0.1, 1];
+CHP3_para = [0.28, 0.56, Lh_max(3), 0.1, 0.5];
 
 
 %电锅炉
 eBoiler1_para = [0.98; 0; 0; 0.5]; % eBoiler_eff_in, eBoiler_Prate_in, eBoiler_Prate_min, eBoiler_Prate_ramp
-eBoiler2_para = [0.98; Le_max(2) * 0.7; 0; 0.3];
+eBoiler2_para = [0.98; Le_max(2) * 0.7; 0; 1];
 eBoiler3_para = [0.98; 0; 0; 0.5];
 
 %燃气锅炉
@@ -89,7 +88,7 @@ for IES_no = 1 : IESNUMBER
     eval(['EH',num2str(IES_no),'_solarP_rate = solar_max(IES_no);']);
     eval(['EH',num2str(IES_no),'_windP_rate = wind_max(IES_no);']);
 end
-
+res_total = sum(EH1_solarP + EH1_windP + EH2_solarP + EH2_windP + EH3_solarP + EH3_windP + EH_res_total);
 % 简要画图，判断净负荷，包括电与热
 
 EH1_Le_jing = EH1_Le-EH1_solarP-EH1_windP;
@@ -178,7 +177,7 @@ eleLimit1 = [singleLimit(1), -singleLimit(1), 1];
 eleLimit2 = [singleLimit(2), -singleLimit(2), 1];
 eleLimit3 = [singleLimit(3), -singleLimit(3), 1];
 if isCollaborate == 1
-    eleLimit_total = [sum(singleLimit)/3, 0];
+    eleLimit_total = [sum(singleLimit)/4, 0];
 else
     eleLimit_total = [sum(singleLimit), -sum(singleLimit)] * 10;
 end
