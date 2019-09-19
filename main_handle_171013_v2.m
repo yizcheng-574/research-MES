@@ -1,10 +1,10 @@
 clc; clear; close all
 % 数据处理
-load('collaborate.mat');
+load('../collaborate.mat');
 result_Ele_collaborate = result_Ele; priceArray_collaborate = priceArray;
-load('autonmous.mat', 'result_Ele', 'priceArray');
+load('../autonomous.mat', 'result_Ele', 'priceArray');
 result_Ele_autonomous = result_Ele; priceArray_autonomous = priceArray;
-load('collaborate_feedin.mat', 'result_Ele', 'priceArray');
+load('../collaborate_feedin.mat', 'result_Ele', 'priceArray');
 result_Ele_collaborate_feedin = result_Ele; priceArray_collaborate_feedin = priceArray;
 result_Ele = result_Ele_collaborate; priceArray = priceArray_collaborate;
 global period
@@ -99,15 +99,9 @@ plotAux;
     optNumber = 24;
     w=1.5;
     %----------------协同与不协同各MES对比----
-    load('autonmous.mat', 'eleLimit_total');
-    [c4_gridClearDemand_autonomous] = drawMES_stacked(t1, result_Ele_autonomous, EH_res_total, -3e3, 4e3, eleLimit_total, ...
-        priceArray_autonomous, elePrice);
-    load('collaborate_feedin.mat', 'eleLimit_total');
-    [c4_gridClearDemand_collaborate_feedin] = drawMES_stacked(t1, result_Ele_collaborate_feedin, EH_res_total, -3e3, 4e3, eleLimit_total,...
-        priceArray_collaborate_feedin, elePrice);
-    load('collaborate.mat', 'eleLimit_total');
-    [c4_gridClearDemand_collaborate] = drawMES_stacked(t1, result_Ele_collaborate, EH_res_total, -3e3, 4e3, eleLimit_total,...
-        priceArray_collaborate, elePrice);
+    [c4_gridClearDemand_autonomous] = drawMES_stacked(t1, result_Ele_autonomous, EH_res_total, -3e3, 4e3, '../autonomous.mat', elePrice);
+    [c4_gridClearDemand_collaborate_feedin] = drawMES_stacked(t1, result_Ele_collaborate_feedin, EH_res_total, -3e3, 4e3, '../collaborate_feedin.mat', elePrice);
+    [c4_gridClearDemand_collaborate] = drawMES_stacked(t1, result_Ele_collaborate, EH_res_total, -3e3, 4e3, '../collaborate.mat', elePrice);
 
     %-----------------阻塞管理-----------------
     figure;
@@ -272,4 +266,3 @@ plotAux;
         set(gcf,'Position',[0 0 590 500]);
         fig = fig + 1;
     end
-

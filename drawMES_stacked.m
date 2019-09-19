@@ -1,4 +1,6 @@
-function [c4_gridClearDemand] = drawMES_stacked(t, result_Ele,EH_res_total, ymin, ymax, limit, priceArray, elePrice)
+function [c4_gridClearDemand] = drawMES_stacked(t, result_Ele,EH_res_total, ymin, ymax, datafile, elePrice)
+    
+    load(datafile, 'eleLimit_total', 'priceArray');
     plotAux;    
     c4_gridClearDemand = sum(result_Ele , 2) - EH_res_total;   
     result_Ele_positive = result_Ele;
@@ -34,8 +36,8 @@ function [c4_gridClearDemand] = drawMES_stacked(t, result_Ele,EH_res_total, ymin
     P = plot(t, c4_gridClearDemand/1000);
     set(P, 'Color', 'Black', 'LineWidth', 1.5);
     
-    plot([0, t], ones(25, 1) * limit(1)/1000, 'Color',[0.5 0.5 0.5],'LineStyle','--','LineWidth',1);
-    plot([0, t], ones(25, 1) * limit(2)/1000, 'Color',[0.5 0.5 0.5],'LineStyle','--','LineWidth',1);
+    plot([0, t], ones(25, 1) * eleLimit_total(1)/1000, 'Color',[0.5 0.5 0.5],'LineStyle','--','LineWidth',1);
+    plot([0, t], ones(25, 1) * eleLimit_total(2)/1000, 'Color',[0.5 0.5 0.5],'LineStyle','--','LineWidth',1);
 
     ylabel('power(MW)');
     ylim([ymin, ymax]/1000);
@@ -59,4 +61,3 @@ function [c4_gridClearDemand] = drawMES_stacked(t, result_Ele,EH_res_total, ymin
     set(gcf,'Position',[0 0 500 200]);
 
 end
-
