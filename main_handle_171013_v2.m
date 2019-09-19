@@ -1,39 +1,14 @@
-
-if isCollaborate == 0
-    save('autonmous.mat');
-else
-close all
+clc; clear; close all
 % 数据处理
+load('collaborate.mat');
+result_Ele_collaborate = result_Ele; priceArray_collaborate = priceArray;
+load('autonmous.mat', 'result_Ele', 'priceArray');
+result_Ele_autonomous = result_Ele; priceArray_autonomous = priceArray;
+load('collaborate_feedin.mat', 'result_Ele', 'priceArray');
+result_Ele_collaborate_feedin = result_Ele; priceArray_collaborate_feedin = priceArray;
+result_Ele = result_Ele_collaborate; priceArray = priceArray_collaborate;
 global period
-    
-%--------------------颜色尝试---------------------
-    orange = [1 0.65 0];
-    gold = [1 0.843 0];
-    gray = [0.5 0.5 0.5];
-    
-    olivedrab = [0.41961 0.55686 0.13725];
-    yellowgreen = [0.60392 0.80392 0.19608];
-    
-    firebrick = [0.69804 0.13333 0.13333];
-    tomato = [1 0.38824 0.27843];
-    brown = [0.80392 0.2 0.2];
-    maroon = [0.6902 0.18824 0.37647];
-    
-    royalblue = [0.2549 0.41176 0.88235];
-    royalblue_dark = [0.15294 0.25098 0.5451];
-    darkblue =[0 0 0.5451];
-    dodgerblue = [0.11765 0.56471 1];
-    
-    indianred = [1 0.41 0.42];
-    chocolate3 = [0.804 0.4 0.113];
-    tan2 = [0.93  0.60 0.286];
-    
-    c1 = ColorHex('0D56A6');
-    c2 = ColorHex('41DB00');
-    c3 = ColorHex('A63C00');
-    
-    stackedbar = @(x, A) bar(x, A, 'stacked');
-    prettyline = @(x, y) plot(x, y, 'Color',firebrick, 'LineStyle','-','LineWidth',1.5);
+plotAux;
 %----------------负荷和可再生能源的曲线----------------
     figure
     optNumber=24;
@@ -114,95 +89,59 @@ global period
     if exist('priceArray', 'var')
         cost_clear =  (result_Ele' * priceArray + sum(result_Gas)' * gasPrice1) / period;
     end
-    cost_utility = (result_Ele' *  elePrice + sum(result_Gas)' * gasPrice1) / period;
-    
-    totalCost = sum(cost_utility)
+    totalCost = zeros(1,3);
+    totalCost(1) = sum((result_Ele_autonomous' *  elePrice + sum(result_Gas)' * gasPrice1) / period);
+    totalCost(2) = sum((result_Ele_collaborate_feedin' *  elePrice + sum(result_Gas)' * gasPrice1) / period);
+    totalCost(3) = sum((result_Ele_collaborate' *  elePrice + sum(result_Gas)' * gasPrice1) / period);
     % ------------------绘图-------------------
     t1 = 1 : 1 : 24 * period;
     t2 = 0 : 1 : 24 * period;
     optNumber = 24;
     w=1.5;
-    %-----------------阻塞管理-----------------
-    if isCentral == 0
-        c4_clearingPrice = priceArray;
-    else
-        c4_clearingPrice = elePrice;
-    end
-    c4_gridClearDemand = sum(result_Ele , 2) - EH_res_total;
-    
-    result_Ele_collaborate = result_Ele;
-    load('autonmous.mat', 'result_Ele');
-    result_Ele_autonomous = result_Ele;   
-    result_Ele = result_Ele_collaborate;
-    
-    c4_gridClearDemand_autonomous = sum(result_Ele_autonomous , 2) - EH_res_total;
+    %----------------协同与不协同各MES对比----
+    load('autonmous.mat', 'eleLimit_total');
+    [c4_gridClearDemand_autonomous] = drawMES_stacked(t1, result_Ele_autonomous, EH_res_total, -3e3, 4e3, eleLimit_total, ...
+        priceArray_autonomous, elePrice);
+    load('collaborate_feedin.mat', 'eleLimit_total');
+    [c4_gridClearDemand_collaborate_feedin] = drawMES_stacked(t1, result_Ele_collaborate_feedin, EH_res_total, -3e3, 4e3, eleLimit_total,...
+        priceArray_collaborate_feedin, elePrice);
+    load('collaborate.mat', 'eleLimit_total');
+    [c4_gridClearDemand_collaborate] = drawMES_stacked(t1, result_Ele_collaborate, EH_res_total, -3e3, 4e3, eleLimit_total,...
+        priceArray_collaborate, elePrice);
 
+    %-----------------阻塞管理-----------------
     figure;
     hold on;
-    yyaxis left;
-    H1 = bar(t1, [c4_gridClearDemand, c4_gridClearDemand_autonomous]/1000);
-    H1(1).FaceColor = dodgerblue;
-    H1(1).EdgeColor = 'none';
-    H1(2).FaceColor = yellowgreen;
-    H1(2).EdgeColor = 'none';
-    H3 = stairs(t2, ones(24*period+1, 1) .* eleLimit_total(1)/1000, 'Color',gray,'LineStyle','--','LineWidth',1);
-    H4 = stairs(t2, ones(24*period+1, 1) * eleLimit_total(2)/1000, 'Color',gray,'LineStyle','--','LineWidth',1);
+    H1 = plot(t1, [c4_gridClearDemand_autonomous, c4_gridClearDemand_collaborate_feedin, c4_gridClearDemand_collaborate, ]/1000);
+    set(H1(1), 'Color', 'Black', 'LineWidth', 1.5, 'LineStyle', '--', 'Marker', '.', 'MarkerSize', 13);
+    set(H1(2), 'Color', 'Black', 'LineWidth', 1.5);
+    set(H1(3), 'Color', firebrick, 'LineWidth', 1.5);
+    stairs(t2, ones(24*period+1, 1) .* 0, 'Color',gray,'LineStyle','--','LineWidth',1);
+    stairs(t2, ones(24*period+1, 1) .* eleLimit_total(1)/1000, 'Color',gray,'LineStyle','--','LineWidth',1);
+    stairs(t2, - ones(24*period+1, 1) * eleLimit_total(1)/1000, 'Color',gray,'LineStyle','--','LineWidth',1);
     ylabel('transformer power(MW)');
-    uplimit= max(c4_gridClearDemand + EH_res_total) / 1000 * 1.1;
+    uplimit= max(c4_gridClearDemand_collaborate + EH_res_total) / 1000 * 1.1;
     lowerlimit=-eleLimit_total(2) / 1000 * 1.1;
     
-    yyaxis right;
-    H2 = plot(t1, [c4_clearingPrice, elePrice]);
-    le = legend([H1(1), H1(2), H2(1),H2(2)],...
-        'collaborative autonomous','autonomous','hourly clearing price','utility price', 'Orientation', 'horizontal');...
+    le = legend([H1(1), H1(2), H1(3)],...
+        'autonomous','collaborative autonomous(feed in)', 'collaborative autonomous',...
+        'Orientation', 'vertical');...
     
     set(le,'Box','off');
-    set(H2(1),'Color',firebrick, 'LineStyle','-','LineWidth',1.5, 'Marker', '.', 'MarkerSize', 13)
-    set(H2(2),'Color',darkblue, 'LineStyle','-','LineWidth',1.5)
-    ylabel('electricity price(yuan/kWh)');
-    ylim([0.1, 1.2]);
-    yticks(0.1 : 0.3 : 1.2);
-    %xlabel('时间(h)')
-    xlim([0, 24 * period + 1]);
-    xticks(0 : (24*period/4):24*period);
-    xticklabels({'0:00','6:00','12:00','18:00','24:00'});
+    xlim([0, 25]); xticks(0 : 3: 24); xticklabels({'0:00','3:00', '6:00','9:00','12:00','15:00','18:00','21:00','24:00'});
     set(gcf,'Position',[0 0 500 200]);
     
-    %----------------协同与不协同各MES对比----
-    [c4_gridClearDemand_collaborate] = drawMES_stacked(t1, result_Ele_collaborate, EH_res_total, -3e3, 4e3, eleLimit_total(1));
-    [c4_gridClearDemand_autonomous] = drawMES_stacked(t1, result_Ele_autonomous, EH_res_total, -3e3, 4e3, eleLimit_total(1));
-%     drawMES(t1, result_Ele_collaborate, -1500, 2250);
-%     drawMES(t1, result_Ele_autonomous, -1500, 2250);
-   
     %--------------消纳率计算---------------
-    unaccomodated_res_collaborate = EH_res_total;
-    unaccomodated_res_autonomous = EH_res_total;
-    unaccomodated_res_total_collaborate = 0;
-    unaccomodated_res_total_autonomous = 0;
-
-    for tmp_t = 1 : 24
-        for tmp_ies = 1 : 3
-            if result_Ele_collaborate(tmp_t, tmp_ies) < 0
-                unaccomodated_res_collaborate(tmp_t) = unaccomodated_res_collaborate(tmp_t) +...
-                    min(-result_Ele_collaborate(tmp_t, tmp_ies), result_EH_windP(tmp_t, tmp_ies) + result_EH_solarP(tmp_t, tmp_ies));
-            end
-            if result_Ele_autonomous(tmp_t, tmp_ies) < 0
-                unaccomodated_res_autonomous(tmp_t) = unaccomodated_res_autonomous(tmp_t) +...
-                    min(-result_Ele_autonomous(tmp_t, tmp_ies), result_EH_windP(tmp_t, tmp_ies) + result_EH_solarP(tmp_t, tmp_ies));
-            end
-        end
-        if c4_gridClearDemand_collaborate(tmp_t) < 0
-            unaccomodated_res_total_collaborate = unaccomodated_res_total_collaborate + ...
-                    min(-c4_gridClearDemand_collaborate(tmp_t), unaccomodated_res_collaborate(tmp_t) + EH_res_total(tmp_t));
-        end
-        if c4_gridClearDemand_autonomous(tmp_t) < 0
-            unaccomodated_res_total_autonomous = unaccomodated_res_total_autonomous + ...
-                    min(-c4_gridClearDemand_autonomous(tmp_t), unaccomodated_res_autonomous(tmp_t) + EH_res_total(tmp_t));
-        end
-    end
-    disp(unaccomodated_res_total_collaborate/res_total)
-    disp(unaccomodated_res_total_autonomous/res_total)
-    %----------------优化结果2---------------
+   accomodation = zeros(1,3);
+   accomodation(1) = calculate_accomodation_rate(result_Ele_autonomous, c4_gridClearDemand_autonomous, ...
+       EH_res_total, res_total, result_EH_windP, result_EH_solarP );
+   accomodation(2) = calculate_accomodation_rate(result_Ele_collaborate_feedin, c4_gridClearDemand_collaborate_feedin,...
+       EH_res_total, res_total, result_EH_windP, result_EH_solarP );
+   accomodation(3) = calculate_accomodation_rate(result_Ele_collaborate, c4_gridClearDemand_collaborate,...
+       EH_res_total, res_total, result_EH_windP, result_EH_solarP );
+    totalCost
+    accomodation
+   %----------------优化结果2---------------
     result_Ele_loss_positive = result_Ele_loss;
     result_Ele_loss_positive(result_Ele_loss_positive<0) = 0;
     result_Ele_loss_negtive = result_Ele_loss;
@@ -262,11 +201,13 @@ global period
       
         if max(result_ES_discharge(:, IES_no)) > 0 && max(result_ES_charge(:, IES_no)) > 0
             le = legend([H1(1), H1(2), H1(3), H1(4), H3(2), H2, H4(1), H4(2)],...
-                'imported','CHP','renewable energies','EES','EB','SOC','fixed load','total load',...
+                'imported/exported electricity','CHP','renewable energies','EES','EB',...
+                'SOC of EES','fixed electric load','total electric load',...
                 'Location','northoutside','Orientation','horizontal');
             set(le, 'Box', 'off');
         end
 %         set(gcf,'Position',[0 0 660 500]);
+        set(le, 'NumColumns', 5);
         set(gcf,'Position',[0 0 590 500]);
         fig = fig + 1;
     end
@@ -321,14 +262,14 @@ global period
 
         if max(result_HS_discharge(:, IES_no)) > 10 && max(result_HS_charge(:, IES_no)) > 10
             le = legend([H1(1),H1(2),H1(3),H1(4),H2,H4(1),H4(2)],...
-                'CHP','GF','EB','TES','SOC','fixed load','total load',...
+                'CHP','GF','EB','TES',...
+                'SOC of TES','fixed thermal load','total thermal load',...
                 'Location','northoutside','Orientation','horizontal');
             set(le,'Box','off');
+            set(le, 'NumColumns', 4);
         end
 %         set(gcf,'Position',[0 0 660 500]);
         set(gcf,'Position',[0 0 590 500]);
         fig = fig + 1;
     end
-    
-end
 

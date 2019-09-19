@@ -15,7 +15,6 @@ load '../singleWindValue.mat'
 load '../singleLoadValue.mat'
 load '../gridPriceRecord'
 
-isCollaborate = 1;
 Le_max = [1.2 , 1.5 , 3] * 1000;
 Lh_max = [1.5 , 1.8 , 4] * 1000;
 Le_dr_rate = [0, 0.2, 0];
@@ -177,7 +176,10 @@ eleLimit1 = [singleLimit(1), -singleLimit(1), 1];
 eleLimit2 = [singleLimit(2), -singleLimit(2), 1];
 eleLimit3 = [singleLimit(3), -singleLimit(3), 1];
 if isCollaborate == 1
-    eleLimit_total = [sum(singleLimit)/4, 0];
+%     eleLimit_total = [sum(singleLimit)/4, 0];
+    eleLimit_total = [2250, 0];
+elseif isCollaborate == 2
+    eleLimit_total = [2250, -2250];
 else
     eleLimit_total = [sum(singleLimit), -sum(singleLimit)] * 10;
 end

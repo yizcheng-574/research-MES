@@ -1,4 +1,3 @@
-clc;clear;
 global caseType couldExport
 caseType = 2;
 couldExport = 1;
@@ -18,5 +17,5 @@ isDA = 0;
 % ¶þ·Ö·¨
 single_temporal;
 isCentral = 0;
-main_handle_171013_v2
+
 
