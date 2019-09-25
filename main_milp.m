@@ -1,11 +1,12 @@
 % 集中式优化：单次
 clc;clear;
 close all;
+isCollaborate = 1;
 para_init;
 %1 全时段集中式优化
 %2 集中式滚动优化
 %0 分布式滚动优化
-global period couldExport
+global period
 for pt = 1: 24 * period
     EH1.predict(pt);
     EH2.predict(pt);
@@ -24,29 +25,18 @@ for pt = 1: 24 * period
     f = [EH1_f; EH2_f; EH3_f];
     ub = [EH1_ub; EH2_ub; EH3_ub];
     lb = [EH1_lb; EH2_lb; EH3_lb];
-    [lr , lc] = size(EH1_Aeq);
-    Aeq = zeros( lr*number, lc*number);
-    for i= 1 : number
-        eval(['Aeq((i-1)*lr+1:lr*i,(i-1)*lc+1:lc*i) = EH',num2str(i),'_Aeq;']);
-    end
+    
+    Aeq = blkdiag(EH1_Aeq, EH2_Aeq, EH3_Aeq);
     beq = [EH1_beq; EH2_beq; EH3_beq];
     
-    [lr , lc] = size(EH1_A);
-    A1 = zeros( lr*number, lc*number);
-    for i= 1 : number
-        eval(['A1((i-1)*lr+1:lr*i,(i-1)*lc+1:lc*i) = EH',num2str(i),'_A;']);
-    end
+    A1 = blkdiag(EH1_A, EH2_A, EH3_A);
     b1 = [EH1_b; EH2_b;EH3_b];
     
     % 需要额外增加一个购电量的上、下限约束
     A2 = [EH1_A_eleLimit_total, EH2_A_eleLimit_total, EH2_A_eleLimit_total];
-    b2 = ones(time, 1) .* eleLimit_total(1);
-
-    if couldExport == 1
-    	b2_sale = ones(time, 1) .* eleLimit_total(2);
-    else
-        b2_sale = zeros(time, 1);
-    end
+    b2 = ones(time, 1) .* eleLimit_total(1) + EH_res_total(pt : end);
+    b2_sale = ones(time, 1) .* eleLimit_total(2) + EH_res_total(pt : end);
+    
     A = [A1; A2; -A2];
     b = [b1; b2; -b2_sale];
     

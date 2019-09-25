@@ -151,6 +151,7 @@ classdef EH_local_170828_v3 < handle
             obj.HS_Hmax = obj.HS_totalC / HS_para(6);
             obj.HS_eff = HS_para(7);
             obj.HS_selfd = 0.9956;
+
             % 投标
             obj.demand_curve = zeros(priceNumbers, 1); %初始化投标曲线
             
@@ -710,10 +711,10 @@ classdef EH_local_170828_v3 < handle
             %归纳所有线性约束
             %等式约束包括：电、热平衡约束（改为不等式），电、热储能平衡性约束（改为不等式）
             %不等式约束包括：SOC约束，购气量和的约束，（爬坡率约束）
-            Aeq=[Aeq_Edr; Aeq_Hdr;Aeq_Hbus; Aeq_ES; Aeq_HS; Aeq_Ebus];
-            beq=[beq_Edr; beq_Hdr;beq_Hbus;beq_ES; beq_HS; beq_Ebus];
-            A=[A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc; A_binary; A_ramp; -A_ramp];
-            b=[b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc; b_binary; b_ramp; b_ramp];
+            Aeq=[Aeq_Edr; Aeq_Hdr;Aeq_Hbus; Aeq_ES; Aeq_HS];
+            beq=[beq_Edr; beq_Hdr;beq_Hbus; beq_ES; beq_HS];
+            A=[Aeq_Ebus; A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc; A_binary; A_ramp; -A_ramp];
+            b=[beq_Ebus; b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc; b_binary; b_ramp; b_ramp];
 
            % 需要额外增加一个购电量的上、下限约束
             A_eleLimit_total = zeros(time, var);
@@ -863,10 +864,10 @@ classdef EH_local_170828_v3 < handle
             %等式约束包括：电、热平衡约束（改为不等式），电、热储能平衡性约束（改为不等式）
             %不等式约束包括：SOC约束，购气量和的约束，（爬坡率约束）
           
-            Aeq=[Aeq_Edr; Aeq_Hdr; Aeq_Hbus; Aeq_ES; Aeq_HS; Aeq_Ebus;];
-            beq=[beq_Edr; beq_Hdr; beq_Hbus;beq_ES; beq_HS; beq_Ebus;];
-            A=[A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc; A_ramp; -A_ramp];
-            b=[b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc; b_ramp; b_ramp];
+            Aeq=[Aeq_Edr; Aeq_Hdr; Aeq_Hbus; Aeq_ES; Aeq_HS;];
+            beq=[beq_Edr; beq_Hdr; beq_Hbus; beq_ES; beq_HS;];
+            A=[Aeq_Ebus; A1_Esoc; A2_Esoc; A1_Hsoc; A2_Hsoc; A_ramp; -A_ramp];
+            b=[beq_Ebus; b1_Esoc; b2_Esoc; b1_Hsoc; b2_Hsoc; b_ramp; b_ramp];
 
            % 需要额外增加一个购电量的上、下限约束
             A_eleLimit_total = zeros(time, var);
