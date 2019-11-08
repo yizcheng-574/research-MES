@@ -1,4 +1,23 @@
 clc; clear; close all
+%-------------------case 1--------------------------
+load('../central.mat');
+cost = elePrice' * result_Ele +  sum(result_CHP_G + result_Boiler_G) * gasPrice1
+sum(cost)
+clear except -cost;
+load('../autonomous.mat')
+cost = elePrice' * result_Ele +  sum(result_CHP_G + result_Boiler_G) * gasPrice1;
+totalCost(1) = sum(cost);
+clear except -cost;
+load('../collaborate.mat');
+cost = elePrice' * result_Ele +  sum(result_CHP_G + result_Boiler_G) * gasPrice1
+sum(cost)
+totalCost(2) = sum(cost);
+clear except -cost;
+load('../collaborate_feedin.mat');
+cost = elePrice' * result_Ele +  sum(result_CHP_G + result_Boiler_G) * gasPrice1;
+totalCost(3) = sum(cost);
+
+%-------------------case 2--------------------------
 % 数据处理
 load('../collaborate.mat');
 result_Ele_collaborate = result_Ele; priceArray_collaborate = priceArray;
@@ -27,7 +46,7 @@ plotAux;
         eval(['EH_Le_origin = EH_Le_base + EH', num2str(IES_no),'_Le_drP_total / sum(EH', num2str(IES_no),'_Le_flag) * EH', num2str(IES_no),'_Le_flag;']);
         eval(['EH_Lh_origin = EH_Lh_base + EH', num2str(IES_no),'_Lh_drP_total / sum(EH', num2str(IES_no),'_Lh_flag) * EH', num2str(IES_no),'_Lh_flag;']);
 
-        subplot(3 , 2 , (IES_no - 1) * 2 + 1 )
+        subplot(2 , 3 , IES_no)
         hold on;
         plot(t, EH_Le_base / 1000, 'Color', 'b', 'LineStyle', '-', 'LineWidth', w)
         plot(t, EH_Le_origin / 1000, 'Color', 'b', 'LineStyle', '-.', 'LineWidth', w) 
@@ -45,7 +64,7 @@ plotAux;
             set(H1,'Box','off');
         end
  
-        subplot(3,2,(IES_no - 1) * 2 + 2)
+        subplot(2,3, 3 + IES_no)
         hold on
         if solar_max(IES_no) > 0
             plot(t, EH_solarP / 1000, 'Color', 'k', 'LineStyle', '-', 'LineWidth', w);
@@ -89,10 +108,7 @@ plotAux;
     if exist('priceArray', 'var')
         cost_clear =  (result_Ele' * priceArray + sum(result_Gas)' * gasPrice1) / period;
     end
-    totalCost = zeros(1,3);
-    totalCost(1) = sum((result_Ele_autonomous' *  elePrice + sum(result_Gas)' * gasPrice1) / period);
-    totalCost(2) = sum((result_Ele_collaborate_feedin' *  elePrice + sum(result_Gas)' * gasPrice1) / period);
-    totalCost(3) = sum((result_Ele_collaborate' *  elePrice + sum(result_Gas)' * gasPrice1) / period);
+    
     % ------------------绘图-------------------
     t1 = 1 : 1 : 24 * period;
     t2 = 0 : 1 : 24 * period;
@@ -118,7 +134,7 @@ plotAux;
     lowerlimit=-eleLimit_total(2) / 1000 * 1.1;
     
     le = legend([H1(1), H1(2), H1(3)],...
-        'autonomous','collaborative autonomous(feed in)', 'collaborative autonomous',...
+        'Non-collaborative Autonomous','Collaborative Autonomous', 'Collaborative Autonomous with Feed-in Limitation',...
         'Orientation', 'vertical');...
     
     set(le,'Box','off');
@@ -133,7 +149,6 @@ plotAux;
        EH_res_total, res_total, result_EH_windP, result_EH_solarP );
    accomodation(3) = calculate_accomodation_rate(result_Ele_collaborate, c4_gridClearDemand_collaborate,...
        EH_res_total, res_total, result_EH_windP, result_EH_solarP );
-    totalCost
     accomodation
    %----------------优化结果2---------------
     result_Ele_loss_positive = result_Ele_loss;
@@ -195,13 +210,13 @@ plotAux;
       
         if max(result_ES_discharge(:, IES_no)) > 0 && max(result_ES_charge(:, IES_no)) > 0
             le = legend([H1(1), H1(2), H1(3), H1(4), H3(2), H2, H4(1), H4(2)],...
-                'imported/exported electricity','CHP','renewable energies','EES','EB',...
+                'imported/exported electricity','CHP','onsite RES','EES','EB',...
                 'SOC of EES','fixed electric load','total electric load',...
                 'Location','northoutside','Orientation','horizontal');
             set(le, 'Box', 'off');
         end
 %         set(gcf,'Position',[0 0 660 500]);
-        set(le, 'NumColumns', 5);
+%         set(le, 'NumColumns', 5);
         set(gcf,'Position',[0 0 590 500]);
         fig = fig + 1;
     end
@@ -260,7 +275,7 @@ plotAux;
                 'SOC of TES','fixed thermal load','total thermal load',...
                 'Location','northoutside','Orientation','horizontal');
             set(le,'Box','off');
-            set(le, 'NumColumns', 4);
+%             set(le, 'NumColumns', 4);
         end
 %         set(gcf,'Position',[0 0 660 500]);
         set(gcf,'Position',[0 0 590 500]);

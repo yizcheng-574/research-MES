@@ -1,4 +1,4 @@
-function [c4_gridClearDemand] = drawMES_stacked(t, result_Ele,EH_res_total, ymin, ymax, datafile, elePrice)
+function [c4_gridClearDemand] = drawMES_stacked(t, result_Ele, EH_res_total, ymin, ymax, datafile, elePrice)
     
     load(datafile, 'eleLimit_total', 'priceArray');
     plotAux;    
@@ -53,11 +53,11 @@ function [c4_gridClearDemand] = drawMES_stacked(t, result_Ele,EH_res_total, ymin
     
     xlim([0, 25]); xticks(0: 6 : 24); xticklabels({ '0:00','6:00','12:00','18:00','24:00' });
     le = legend([H1(1), H1(2), H1(3), H2(4), P, H3(1), H3(2)], ...
-        'MES_1', 'MES_2', 'MES_3', 'RES integrated into the IMES', 'main transformer',...
+        'MES_1', 'MES_2', 'MES_3', 'shared RES', 'main transformer',...
         'clearing price','utility price',...
         'Orientation','horizontal');
     set(le,'Box','off');
-    set(le, 'NumColumns', 4);
+%     set(le, 'NumColumns', 4);
     set(gcf,'Position',[0 0 500 200]);
 
 end
