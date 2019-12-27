@@ -1,4 +1,7 @@
 clc; clear; close all
+global isEn
+isEn = 0; % 图例中文or英文
+set(0,'defaultAxesFontName','Microsoft Yahei UI');
 %-------------------case 1--------------------------
 load('../central.mat');
 cost = elePrice' * result_Ele +  sum(result_CHP_G + result_Boiler_G) * gasPrice1
@@ -45,44 +48,72 @@ plotAux;
         EH_Lh = EH_Lh_base + result_EH_Hdr(:, IES_no);
         eval(['EH_Le_origin = EH_Le_base + EH', num2str(IES_no),'_Le_drP_total / sum(EH', num2str(IES_no),'_Le_flag) * EH', num2str(IES_no),'_Le_flag;']);
         eval(['EH_Lh_origin = EH_Lh_base + EH', num2str(IES_no),'_Lh_drP_total / sum(EH', num2str(IES_no),'_Lh_flag) * EH', num2str(IES_no),'_Lh_flag;']);
-
-        subplot(2 , 3 , IES_no)
+        figure(1);
+        subplot(1 , 3 , IES_no)
         hold on;
-        plot(t, EH_Le_base / 1000, 'Color', 'b', 'LineStyle', '-', 'LineWidth', w)
-        plot(t, EH_Le_origin / 1000, 'Color', 'b', 'LineStyle', '-.', 'LineWidth', w) 
-        plot(t, EH_Lh_base / 1000, 'Color', 'r', 'LineStyle', '-', 'LineWidth',w)
-        plot(t, EH_Lh_origin / 1000, 'Color', 'r', 'LineStyle', '-.', 'LineWidth', w) 
+        plot(t, EH_Le_base / 1000, 'Color', 'k', 'LineStyle', '-', 'LineWidth', w)
+        plot(t, EH_Le_origin / 1000, 'Color', 'k', 'LineStyle', '-.', 'LineWidth', w) 
+        plot(t, EH_Lh_base / 1000, 'Color', 'b','LineStyle', '--', 'LineWidth', w)
+%         plot(t, EH_Lh_origin / 1000, 'Color', 'b','LineStyle', '-', 'LineWidth',w, 'Marker', 'o', 'MarkerSize', 3 ) 
         xlim([0, 24 * period])
         ylim([0, max(max(EH_Le), max(EH_Lh)) / 1000]);
-        xticks(0 : (24 * period / 4) : 24 * period);
-        xticklabels({ '0:00', '6:00', '12:00', '18:00', '24:00' });
-        xlabel(sprintf('MES_%d', IES_no))
-        ylabel('Load(MW)')
+        if isEn == 1
+            xticks(0 : (24 * period /4) : 24 * period);
+            xticklabels({'0:00','6:00','12:00','18:00','24:00'});
+            ylabel('Load(MW)');
+        else
+            xticks(0 : (24 * period /2) : 24 * period);
+            xticklabels({'0:00','12:00','24:00'});
+            ylabel('负荷(MW)');
+        end  
+        xlabel(sprintf('MES_%d', IES_no));
         if IES_no == 1
-            H1 = legend('fixed electric load','total electric load','fixed thermal load','total thermal load',...
+            if isEn == 1
+                H1 = legend('fixed electric load','total electric load','fixed thermal load','total thermal load',...
+                    'Location','northoutside','Orientation','horizontal');
+            else 
+                   H1 = legend('电基本负荷','总电负荷','热基本负荷',...
                 'Location','northoutside','Orientation','horizontal');
+            end
             set(H1,'Box','off');
         end
- 
-        subplot(2,3, 3 + IES_no)
+        set(gcf,'Position',[0 0 650 250]);
+        figure(2);
+        subplot(1,3, IES_no)
         hold on
         if solar_max(IES_no) > 0
             plot(t, EH_solarP / 1000, 'Color', 'k', 'LineStyle', '-', 'LineWidth', w);
-            le = legend('PV','Location','northoutside','Orientation','horizontal');
+            if isEn == 1
+                le = legend('PV','Location','northoutside','Orientation','horizontal');
+            else
+                le = legend('光伏','Location','northoutside','Orientation','horizontal');
+            end
         end
         if wind_max(IES_no) > 0
             plot(t, EH_windP / 1000, 'Color', 'k', 'LineStyle', '--', 'LineWidth', w);
-            le = legend('wind','Location','northoutside','Orientation','horizontal');
+            if isEn == 1
+                le = legend('wind','Location','northoutside','Orientation','horizontal');
+            else
+                le = legend('风电','Location','northoutside','Orientation','horizontal');
+            end
         end
         set(le,'Box','off');
         xlim([0, 24*period]);
-        xticks(0 : (24 * period /4) : 24 * period);
-        xticklabels({'0:00','6:00','12:00','18:00','24:00'});
+        
+      
         xlabel(sprintf('MES_%d', IES_no))
-        ylabel('power(MW)')
-            
+        if isEn == 1
+            xticks(0 : (24 * period /4) : 24 * period);
+            xticklabels({'0:00','6:00','12:00','18:00','24:00'});
+            ylabel('power(MW)')
+        else
+            xticks(0 : (24 * period /2) : 24 * period);
+            xticklabels({'0:00','12:00','24:00'});
+            ylabel('功率(MW)')
+        end
+        set(gcf,'Position',[0 0 650 250]);
     end
-    set(gcf,'Position',[0 0 650 500]);
+    
     
     
     %------------------数据处理----------------
@@ -129,18 +160,29 @@ plotAux;
     stairs(t2, ones(24*period+1, 1) .* 0, 'Color',gray,'LineStyle','--','LineWidth',1);
     stairs(t2, ones(24*period+1, 1) .* eleLimit_total(1)/1000, 'Color',gray,'LineStyle','--','LineWidth',1);
     stairs(t2, - ones(24*period+1, 1) * eleLimit_total(1)/1000, 'Color',gray,'LineStyle','--','LineWidth',1);
-    ylabel('transformer power(MW)');
+    if isEn == 1
+        ylabel('transformer power(MW)');
+    else
+        ylabel('主变功率(MW)')
+    end
     uplimit= max(c4_gridClearDemand_collaborate + EH_res_total) / 1000 * 1.1;
     lowerlimit=-eleLimit_total(2) / 1000 * 1.1;
     
-    le = legend([H1(1), H1(2), H1(3)],...
-        'Non-collaborative Autonomous','Collaborative Autonomous', 'Collaborative Autonomous with Feed-in Limitation',...
-        'Orientation', 'vertical');...
+    if isEn == 1
+        le = legend([H1(1), H1(2), H1(3)],...
+            'Non-collaborative Autonomous','Collaborative Autonomous', 'Collaborative Autonomous with Feed-in Limitation',...
+            'Orientation', 'vertical');
+    else
+        le = legend([H1(1), H1(2), H1(3)],...
+            '自治优化','协同自治优化', '考虑馈电限制的协同自治优化',...
+            'Orientation', 'vertical');
+        xlabel('时间')
+    end
     
     set(le,'Box','off');
     xlim([0, 25]); xticks(0 : 3: 24); xticklabels({'0:00','3:00', '6:00','9:00','12:00','15:00','18:00','21:00','24:00'});
-    set(gcf,'Position',[0 0 500 200]);
-    
+    set(gcf,'Position',[0 0 500 300]);
+   
     %--------------消纳率计算---------------
    accomodation = zeros(1,3);
    accomodation(1) = calculate_accomodation_rate(result_Ele_autonomous, c4_gridClearDemand_autonomous, ...
@@ -191,8 +233,12 @@ plotAux;
         H4 = plot(t1,[Eload_base, Eload]);
         set(H4(1), 'Color', 'black', 'LineStyle', '-.', 'LineWidth', 1.5);
         set(H4(2), 'Color', 'black', 'LineStyle', '-', 'LineWidth', 1.5);
-
-        ylabel('power(MW)');
+        
+        if isEn == 1
+            ylabel('power(MW)');
+        else
+            ylabel('功率(MW)');
+        end
         ylim([min(sum(bar_negtive, 2)) * 1.1 - 0.01 ,max(sum(bar_positive, 2)) * 1.1]);
         
         if max(result_ES_discharge(:, IES_no)) > 0 && max(result_ES_charge(:, IES_no)) > 0
@@ -209,15 +255,22 @@ plotAux;
         xticklabels({ '0:00','6:00','12:00','18:00','24:00' });
       
         if max(result_ES_discharge(:, IES_no)) > 0 && max(result_ES_charge(:, IES_no)) > 0
-            le = legend([H1(1), H1(2), H1(3), H1(4), H3(2), H2, H4(1), H4(2)],...
-                'imported/exported electricity','CHP','onsite RES','EES','EB',...
-                'SOC of EES','fixed electric load','total electric load',...
-                'Location','northoutside','Orientation','horizontal');
+            if isEn == 1
+                le = legend([H1(1), H1(2), H1(3), H1(4), H3(2), H2, H4(1), H4(2)],...
+                    'imported/exported electricity','CHP','onsite RES','EES','EB',...
+                    'SOC of EES','fixed electric load','total electric load',...
+                    'Location','northoutside','Orientation','horizontal');
+            else
+                le = legend([H1(1), H1(2), H1(3), H1(4), H3(2), H2, H4(1), H4(2)],...
+                    '输入/输出电功率','CHP机组','可再生能源出力','电储能','电锅炉',...
+                    '电储能SOC','电固定负荷','总电负荷',...
+                    'Location','northoutside','Orientation','horizontal');
+            end
             set(le, 'Box', 'off');
         end
 %         set(gcf,'Position',[0 0 660 500]);
 %         set(le, 'NumColumns', 5);
-        set(gcf,'Position',[0 0 590 500]);
+        set(gcf,'Position',[0 0 590 750]);
         fig = fig + 1;
     end
     
@@ -252,8 +305,11 @@ plotAux;
         H4 = plot(t1,[Hload_base, Hload]);
         set(H4(1), 'Color', 'black', 'LineStyle', '-.', 'LineWidth', 1.5);
         set(H4(2), 'Color', 'black', 'LineStyle', '-', 'LineWidth', 1.5);
-       
-        ylabel('power(MW)');
+        if isEn == 1
+            ylabel('power(MW)');
+        else
+            ylabel('功率(MW)');
+        end
         ylim([min(sum(bar_negtive, 2)) * 1.1 - 0.01,max(sum(bar_positive, 2)) * 1.1]);
         if max(result_HS_discharge(:, IES_no)) > 10 && max(result_HS_charge(:, IES_no)) > 10
             yyaxis right;
@@ -270,12 +326,19 @@ plotAux;
         xticklabels({'0:00','6:00','12:00','18:00','24:00'});
 
         if max(result_HS_discharge(:, IES_no)) > 10 && max(result_HS_charge(:, IES_no)) > 10
-            le = legend([H1(1),H1(2),H1(3),H1(4),H2,H4(1),H4(2)],...
-                'CHP','GF','EB','TES',...
-                'SOC of TES','fixed thermal load','total thermal load',...
-                'Location','northoutside','Orientation','horizontal');
+            if isEn == 1
+                le = legend([H1(1),H1(2),H1(3),H1(4),H2,H4(1),H4(2)],...
+                    'CHP','GF','EB','TES',...
+                    'SOC of TES','fixed thermal load','total thermal load',...
+                    'Location','northoutside','Orientation','horizontal');
+            else
+                 le = legend([H1(1),H1(2),H1(3),H1(4),H2,H4(2)],...
+                    'CHP机组','燃气锅炉','电锅炉','热储能',...
+                    '热储能SOC','总热负荷',...
+                    'Location','northoutside','Orientation','horizontal');
+            end
             set(le,'Box','off');
-%             set(le, 'NumColumns', 4);
+            set(le, 'NumColumns', 4);
         end
 %         set(gcf,'Position',[0 0 660 500]);
         set(gcf,'Position',[0 0 590 500]);

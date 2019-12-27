@@ -1,5 +1,5 @@
 function [c4_gridClearDemand] = drawMES_stacked(t, result_Ele, EH_res_total, ymin, ymax, datafile, elePrice)
-    
+    global isEn
     load(datafile, 'eleLimit_total', 'priceArray');
     plotAux;    
     c4_gridClearDemand = sum(result_Ele , 2) - EH_res_total;   
@@ -39,25 +39,40 @@ function [c4_gridClearDemand] = drawMES_stacked(t, result_Ele, EH_res_total, ymi
     plot([0, t], ones(25, 1) * eleLimit_total(1)/1000, 'Color',[0.5 0.5 0.5],'LineStyle','--','LineWidth',1);
     plot([0, t], ones(25, 1) * eleLimit_total(2)/1000, 'Color',[0.5 0.5 0.5],'LineStyle','--','LineWidth',1);
 
-    ylabel('power(MW)');
+    if isEn == 1
+        ylabel('power(MW)');
+    else
+        ylabel('功率(MW)');
+    end
     ylim([ymin, ymax]/1000);
     
     yyaxis right;
     
     H3 = plot(1:24, [priceArray, elePrice]);
-    set(H3(1),'Color',firebrick, 'LineStyle','-','LineWidth',1.5);
-    set(H3(2),'Color',firebrick, 'LineStyle','--','LineWidth',1.5);
-    
-    ylabel('electricity price(yuan/kWh)');
+    set(H3(1),'Color',firebrick, 'LineStyle','--','LineWidth',1.5);
+    set(H3(2),'Color',firebrick, 'LineStyle','-','LineWidth',1.5);
+    if isEn == 1
+        ylabel('electricity price(yuan/kWh)');
+    else
+        ylabel('电价(元/kWh)');
+    end
     ylim([0.1, 1.2]);yticks(0.1 : 0.3 : 1.2);
     
     xlim([0, 25]); xticks(0: 6 : 24); xticklabels({ '0:00','6:00','12:00','18:00','24:00' });
-    le = legend([H1(1), H1(2), H1(3), H2(4), P, H3(1), H3(2)], ...
-        'MES_1', 'MES_2', 'MES_3', 'shared RES', 'main transformer',...
-        'clearing price','utility price',...
-        'Orientation','horizontal');
+    if isEn == 1
+        le = legend([H1(1), H1(2), H1(3), H2(4), P, H3(1), H3(2)], ...
+            'MES_1', 'MES_2', 'MES_3', 'shared RES', 'main transformer',...
+            'clearing price','RTP price',...
+            'Orientation','horizontal');
+    else
+        le = legend([H1(1), H1(2), H1(3), H2(4), P, H3(1), H3(2)], ...
+            'MES_1', 'MES_2', 'MES_3', 'IMES共享可再生能源', '主变压器',...
+            '出清电价','主网实时电价',...
+            'Orientation','horizontal');
+         xlabel('时间')
+    end
     set(le,'Box','off');
 %     set(le, 'NumColumns', 4);
-    set(gcf,'Position',[0 0 500 200]);
+    set(gcf,'Position',[0 0 500 250]);
 
 end
