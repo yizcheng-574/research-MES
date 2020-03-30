@@ -6,14 +6,14 @@ close all
 global period off_grid EH1 EH2 EH3 Grid1 IESNUMBER eleLimit_total caseType feedInPrice %feed-in tariff设置很大即是关掉
 period = 60 / 60; % 分母是时间间隔
 
-load '../tmp1.mat'
-load '../tmp2.mat'
-load '../renewableName.mat'
-load '../solarValue.mat'
-load '../windValue.mat'
-load '../singleWindValue.mat'
-load '../singleLoadValue.mat'
-load '../gridPriceRecord'
+load 'data/tmp1.mat'
+load 'data/tmp2.mat'
+load 'data/renewableName.mat'
+load 'data/solarValue.mat'
+load 'data/windValue.mat'
+load 'data/singleWindValue.mat'
+load 'data/singleLoadValue.mat'
+load 'data/gridPriceRecord'
 
 Le_max = [1.2 , 1.5 , 3] * 1000;
 Lh_max = [1.5 , 1.8 , 4] * 1000;

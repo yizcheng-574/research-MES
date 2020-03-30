@@ -46,4 +46,4 @@ end
 [result_Ele(:,2), result_CHP_G(:,2), result_Boiler_G(:,2), result_eBoiler_E(:,2), result_ES_discharge(:,2), result_ES_charge(:,2), result_HS_discharge(:,2), result_HS_charge(:,2), result_ES_SOC(:,2), result_HS_SOC(:,2), result_EH_Le(:, 2), result_EH_Lh(:,2), result_EH_solarP(:,2), result_EH_windP(:,2), result_EH_Edr(:,2), result_EH_Hdr(:,2)] = EH2.getResult;
 [result_Ele(:,3), result_CHP_G(:,3), result_Boiler_G(:,3), result_eBoiler_E(:,3), result_ES_discharge(:,3), result_ES_charge(:,3), result_HS_discharge(:,3), result_HS_charge(:,3), result_ES_SOC(:,3), result_HS_SOC(:,3), result_EH_Le(:, 3), result_EH_Lh(:,3), result_EH_solarP(:,3), result_EH_windP(:,3), result_EH_Edr(:,3), result_EH_Hdr(:,3)] = EH3.getResult;
 
-save('../central.mat');
+save('data/central.mat');

@@ -3,30 +3,30 @@ global isEn
 isEn = 0; % 图例中文or英文
 set(0,'defaultAxesFontName','Microsoft Yahei UI');
 %-------------------case 1--------------------------
-load('../central.mat');
+load('data/central.mat');
 cost = elePrice' * result_Ele +  sum(result_CHP_G + result_Boiler_G) * gasPrice1
 sum(cost)
 clear except -cost;
-load('../autonomous.mat')
+load('data/autonomous.mat')
 cost = elePrice' * result_Ele +  sum(result_CHP_G + result_Boiler_G) * gasPrice1;
 totalCost(1) = sum(cost);
 clear except -cost;
-load('../collaborate.mat');
-cost = elePrice' * result_Ele +  sum(result_CHP_G + result_Boiler_G) * gasPrice1
+load('data/collaborate.mat');
+cost = elePrice' * result_Ele +  sum(result_CHP_G + result_Boiler_G) * gasPrice1;
 sum(cost)
 totalCost(2) = sum(cost);
 clear except -cost;
-load('../collaborate_feedin.mat');
+load('data/collaborate_feedin.mat');
 cost = elePrice' * result_Ele +  sum(result_CHP_G + result_Boiler_G) * gasPrice1;
 totalCost(3) = sum(cost);
 
 %-------------------case 2--------------------------
 % 数据处理
-load('../collaborate.mat');
+load('data/collaborate.mat');
 result_Ele_collaborate = result_Ele; priceArray_collaborate = priceArray;
-load('../autonomous.mat', 'result_Ele', 'priceArray');
+load('data/autonomous.mat', 'result_Ele', 'priceArray');
 result_Ele_autonomous = result_Ele; priceArray_autonomous = priceArray;
-load('../collaborate_feedin.mat', 'result_Ele', 'priceArray');
+load('data/collaborate_feedin.mat', 'result_Ele', 'priceArray');
 result_Ele_collaborate_feedin = result_Ele; priceArray_collaborate_feedin = priceArray;
 result_Ele = result_Ele_collaborate; priceArray = priceArray_collaborate;
 global period
@@ -146,9 +146,9 @@ plotAux;
     optNumber = 24;
     w=1.5;
     %----------------协同与不协同各MES对比----
-    [c4_gridClearDemand_autonomous] = drawMES_stacked(t1, result_Ele_autonomous, EH_res_total, -3e3, 4e3, '../autonomous.mat', elePrice);
-    [c4_gridClearDemand_collaborate_feedin] = drawMES_stacked(t1, result_Ele_collaborate_feedin, EH_res_total, -3e3, 4e3, '../collaborate_feedin.mat', elePrice);
-    [c4_gridClearDemand_collaborate] = drawMES_stacked(t1, result_Ele_collaborate, EH_res_total, -3e3, 4e3, '../collaborate.mat', elePrice);
+    [c4_gridClearDemand_autonomous] = drawMES_stacked(t1, result_Ele_autonomous, EH_res_total, -3e3, 4e3, 'data/autonomous.mat', elePrice);
+    [c4_gridClearDemand_collaborate_feedin] = drawMES_stacked(t1, result_Ele_collaborate_feedin, EH_res_total, -3e3, 4e3, 'data/collaborate_feedin.mat', elePrice);
+    [c4_gridClearDemand_collaborate] = drawMES_stacked(t1, result_Ele_collaborate, EH_res_total, -3e3, 4e3, 'data/collaborate.mat', elePrice);
 
     %-----------------阻塞管理-----------------
     figure;

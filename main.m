@@ -1,11 +1,11 @@
 for isCollaborate = 0:2
     main_distribute;
     if isCollaborate == 0
-        save('../autonomous.mat');
+        save('data/autonomous.mat');
     elseif isCollaborate == 2
-        save('../collaborate_feedin.mat');
+        save('data/collaborate_feedin.mat');
     else
-        save('../collaborate.mat');
+        save('data/collaborate.mat');
     end
 end
-main_handle_171013_v2
+main_handle
